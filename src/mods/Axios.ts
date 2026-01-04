@@ -1,4 +1,5 @@
 import axios from "axios";
+import { getToken } from "./Auth";
 
 const instance = axios.create({
   baseURL: import.meta.env.DEV ? "/api" : "http://127.0.0.1:3822/",
@@ -8,21 +9,33 @@ const instance = axios.create({
 
 instance.interceptors.request.use(
   (config) => {
-    // Do something before request is sent
+    // 添加token到请求头
+    const token = getToken();
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
     return config;
   },
   (error) => {
-    // Do something before request is sent
     return Promise.reject(error);
   }
 );
 
 instance.interceptors.response.use(
   (response) => {
-    return response; //这里的response就是请求成功后的res , response.data即是请求成功后回调函数内的参数res.data
+    return response;
   },
   (err) => {
-    return Promise.reject(err); //将错误消息挂到promise的失败函数上
+    // 处理401未授权错误
+    if (err.response && err.response.status === 401) {
+      // 清除本地认证信息
+      import("./Auth").then(({ clearAuthInfo }) => {
+        clearAuthInfo();
+      });
+      // 跳转到登录页面
+      window.location.href = "/login";
+    }
+    return Promise.reject(err);
   }
 );
 

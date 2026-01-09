@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { login, logout, getUserInfo } from '@/apis/AuthApi';
-import { setToken, getToken, removeToken, setUserInfo, getUserInfo as getLocalUserInfo, removeUserInfo } from '@/mods/Auth';
+import { setToken, getToken, removeToken, setUserInfo, getUserInfo as getLocalUserInfo, removeUserInfo, getEnableLoginDemo } from '@/mods/Auth';
 
 interface UserInfo {
   id: number;
@@ -35,7 +35,8 @@ export const useAuthStore = defineStore('auth', {
   actions: {
     // 初始化状态（用于开发环境）
     initDevState() {
-      if (import.meta.env.DEV) {
+      // 只有在开发环境且未启用登录演示时才初始化模拟数据
+      if (import.meta.env.DEV && !getEnableLoginDemo()) {
         const token = getToken();
         const userInfo = getLocalUserInfo();
         if (token && userInfo) {
@@ -50,6 +51,26 @@ export const useAuthStore = defineStore('auth', {
     async login(username: string, password: string) {
       this.loading = true;
       try {
+        // 开发环境下启用登录演示时，模拟登录成功
+        if (import.meta.env.DEV && getEnableLoginDemo()) {
+          // 使用模拟数据登录
+          const mockToken = 'demo_token_' + Date.now();
+          const mockUserInfo = {
+            id: 1,
+            username: username || 'demo_user',
+            role: 'admin',
+            roleId: 1
+          };
+          this.token = mockToken;
+          this.userInfo = mockUserInfo;
+          this.roles = [mockUserInfo.role];
+          // 存储到本地
+          setToken(mockToken);
+          setUserInfo(mockUserInfo);
+          return true;
+        }
+        
+        // 正常登录流程
         const response = await login({ username, password });
         if (response.success && response.data) {
           const { token, userInfo } = response.data;
@@ -96,7 +117,7 @@ export const useAuthStore = defineStore('auth', {
     // 获取用户信息
     async getInfo() {
       // 开发环境下直接使用本地模拟数据
-      if (import.meta.env.DEV) {
+      if (import.meta.env.DEV && !getEnableLoginDemo()) {
         const userInfo = getLocalUserInfo();
         if (userInfo) {
           this.userInfo = userInfo;
@@ -110,6 +131,16 @@ export const useAuthStore = defineStore('auth', {
       }
       
       try {
+        // 开发环境下启用登录演示时，使用本地存储的用户信息
+        if (import.meta.env.DEV && getEnableLoginDemo()) {
+          const userInfo = getLocalUserInfo();
+          if (userInfo) {
+            this.userInfo = userInfo;
+            this.roles = [userInfo.role];
+            return userInfo;
+          }
+        }
+        
         const response = await getUserInfo();
         if (response.success && response.data) {
           this.userInfo = response.data;

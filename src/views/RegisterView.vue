@@ -135,12 +135,12 @@ const handleRegister = async () => {
     if (valid) {
       loading.value = true;
       try {
-        const success = await register(registerForm);
-        if (success) {
-          ElMessage.success('注册成功，请登录');
+        const response = await register(registerForm);
+        if (response.success) {
+          ElMessage.success(response.msg || '注册成功，请登录');
           router.push('/login');
         } else {
-          ElMessage.error('注册失败，请稍后重试');
+          ElMessage.error(response.msg || '注册失败，请稍后重试');
         }
       } catch (error: any) {
         ElMessage.error('注册失败：' + (error.message || '未知错误'));

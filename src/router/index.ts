@@ -6,6 +6,7 @@ import PIStepsVue from '@/views/SimSteps/PISteps.vue'
 import LoginViewVue from '@/views/LoginView.vue'
 import RegisterViewVue from '@/views/RegisterView.vue'
 import MapManagerViewVue from '@/views/MapManagerView.vue'
+import ProfileViewVue from '@/views/ProfileView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -71,6 +72,15 @@ const router = createRouter({
       component: MapManagerViewVue,
       meta: {
         title: '地图管理',
+        requiresAuth: true
+      }
+    },
+    {
+      path: '/profile',
+      name: 'profile',
+      component: ProfileViewVue,
+      meta: {
+        title: '个人中心',
         requiresAuth: true
       }
     }

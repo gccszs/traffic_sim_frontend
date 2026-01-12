@@ -40,8 +40,7 @@ const handleCommand = async (command: string) => {
     ElMessage.success('退出登录成功');
     router.push('/login');
   } else if (command === 'profile') {
-    // 跳转到个人中心（如果有）
-    ElMessage.info('个人中心功能开发中');
+    router.push('/profile');
   }
 };
 </script>

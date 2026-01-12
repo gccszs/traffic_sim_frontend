@@ -10,10 +10,13 @@ const isLoggedIn = computed(() => authStore.isLoggedIn);
 const userInfo = computed(() => authStore.userInfo);
 
 // 应用启动时初始化auth状态
-onMounted(() => {
-  if (import.meta.env.DEV) {
-    // 开发环境下初始化auth状态
-    authStore.initDevState();
+onMounted(async () => {
+  if (authStore.isLoggedIn && !authStore.userInfo) {
+    try {
+      await authStore.getInfo();
+    } catch (error) {
+      console.error('Failed to get user info:', error);
+    }
   }
 });
 </script>

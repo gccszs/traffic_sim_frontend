@@ -4,6 +4,8 @@ import SettingViewVue from '@/views/SettingView.vue'
 import SimPIViewVue from '@/views/SimPIView.vue'
 import PIStepsVue from '@/views/SimSteps/PISteps.vue'
 import LoginViewVue from '@/views/LoginView.vue'
+import RegisterViewVue from '@/views/RegisterView.vue'
+import MapManagerViewVue from '@/views/MapManagerView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -14,6 +16,15 @@ const router = createRouter({
       component: LoginViewVue,
       meta: {
         title: '登录',
+        requiresAuth: false
+      }
+    },
+    {
+      path: '/register',
+      name: 'register',
+      component: RegisterViewVue,
+      meta: {
+        title: '注册',
         requiresAuth: false
       }
     },
@@ -51,6 +62,15 @@ const router = createRouter({
       component: SimPIViewVue,
       meta: {
         title: '交通仿真',
+        requiresAuth: true
+      }
+    },
+    {
+      path: '/mapmanager',
+      name: 'mapmanager',
+      component: MapManagerViewVue,
+      meta: {
+        title: '地图管理',
         requiresAuth: true
       }
     }

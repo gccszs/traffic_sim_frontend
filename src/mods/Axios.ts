@@ -2,7 +2,7 @@ import axios from "axios";
 import { getToken } from "./Auth";
 
 const instance = axios.create({
-  baseURL: import.meta.env.DEV ? "/api" : "http://127.0.0.1:3822/",
+  baseURL: import.meta.env.DEV ? "https://ava-uncorseted-yesenia.ngrok-free.dev/api" : "http://127.0.0.1:3822/",
   timeout: 50000,
   withCredentials: true,  //允许发送cookie
 });

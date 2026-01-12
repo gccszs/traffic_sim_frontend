@@ -2,7 +2,7 @@
   <div class="login-container">
     <div class="login-box">
       <h2 class="login-title">交通仿真系统</h2>
-      <el-form :model="loginForm" :rules="loginRules" ref="loginForm" label-position="top" class="login-form">
+      <el-form :model="loginForm" :rules="loginRules" ref="loginFormRef" label-position="top" class="login-form">
         <el-form-item label="用户名" prop="username">
           <el-input 
             v-model="loginForm.username" 
@@ -33,6 +33,10 @@
           </el-button>
         </el-form-item>
       </el-form>
+      <div class="register-link">
+        <span>还没有账号？</span>
+        <el-link type="primary" @click="goToRegister">立即注册</el-link>
+      </div>
     </div>
   </div>
 </template>
@@ -83,6 +87,10 @@ const handleLogin = async () => {
     }
   });
 };
+
+const goToRegister = () => {
+  router.push('/register');
+};
 </script>
 
 <style scoped>
@@ -115,5 +123,12 @@ const handleLogin = async () => {
 
 .login-btn {
   width: 100%;
+}
+
+.register-link {
+  text-align: center;
+  margin-top: 15px;
+  font-size: 14px;
+  color: #606266;
 }
 </style>

@@ -1,17 +1,13 @@
 import { defineStore } from 'pinia';
-import { login, logout, getUserInfo } from '@/apis/AuthApi';
-import { setToken, getToken, removeToken, setUserInfo, getUserInfo as getLocalUserInfo, removeUserInfo, getEnableLoginDemo } from '@/mods/Auth';
+import { login as loginApi, logout, getUserInfo } from '@/apis/AuthApi';
+import { setToken, getToken, removeToken, setUserInfo, getUserInfo as getLocalUserInfo, removeUserInfo } from '@/mods/Auth';
 
-interface UserInfo {
-  id: number;
-  username: string;
-  role: string;
-  roleId: number;
-}
+// 导入@/mods/Auth中的UserInfo类型
+type UserInfo = ReturnType<typeof getLocalUserInfo>;
 
 interface AuthState {
   token: string | null;
-  userInfo: UserInfo | null;
+  userInfo: UserInfo;
   roles: string[];
   permissions: string[];
   loading: boolean;
@@ -33,56 +29,30 @@ export const useAuthStore = defineStore('auth', {
   },
 
   actions: {
-    // 初始化状态（用于开发环境）
-    initDevState() {
-      // 只有在开发环境且未启用登录演示时才初始化模拟数据
-      if (import.meta.env.DEV && !getEnableLoginDemo()) {
-        const token = getToken();
-        const userInfo = getLocalUserInfo();
-        if (token && userInfo) {
-          this.token = token;
-          this.userInfo = userInfo;
-          this.roles = [userInfo.role];
-        }
-      }
-    },
-
     // 登录
     async login(username: string, password: string) {
       this.loading = true;
       try {
-        // 开发环境下启用登录演示时，模拟登录成功
-        if (import.meta.env.DEV && getEnableLoginDemo()) {
-          // 使用模拟数据登录
-          const mockToken = 'demo_token_' + Date.now();
-          const mockUserInfo = {
-            id: 1,
-            username: username || 'demo_user',
-            role: 'admin',
-            roleId: 1
-          };
-          this.token = mockToken;
-          this.userInfo = mockUserInfo;
-          this.roles = [mockUserInfo.role];
-          // 存储到本地
-          setToken(mockToken);
-          setUserInfo(mockUserInfo);
-          return true;
-        }
-        
         // 正常登录流程
-        const response = await login({ username, password });
+        const response = await loginApi({ username, password });
         if (response.success && response.data) {
-          const { token, userInfo } = response.data;
-          this.token = token;
+          const { accessToken, user } = response.data;
+          // 转换为符合@/mods/Auth.UserInfo格式的数据
+          const userInfo = {
+            id: user.id,
+            username: user.username,
+            role: user.roleName,
+            roleId: user.roleId
+          };
+          this.token = accessToken;
           this.userInfo = userInfo;
-          this.roles = [userInfo.role];
+          this.roles = [user.roleId.toString()];
           // 存储到本地
-          setToken(token);
+          setToken(accessToken);
           setUserInfo(userInfo);
           return true;
         } else {
-          throw new Error(response.message || '登录失败');
+          throw new Error(response.msg || '登录失败');
         }
       } catch (error) {
         console.error('Login failed:', error);
@@ -116,36 +86,23 @@ export const useAuthStore = defineStore('auth', {
 
     // 获取用户信息
     async getInfo() {
-      // 开发环境下直接使用本地模拟数据
-      if (import.meta.env.DEV && !getEnableLoginDemo()) {
-        const userInfo = getLocalUserInfo();
-        if (userInfo) {
-          this.userInfo = userInfo;
-          this.roles = [userInfo.role];
-          return userInfo;
-        }
-      }
-      
       if (!this.token) {
         throw new Error('No token found');
       }
       
       try {
-        // 开发环境下启用登录演示时，使用本地存储的用户信息
-        if (import.meta.env.DEV && getEnableLoginDemo()) {
-          const userInfo = getLocalUserInfo();
-          if (userInfo) {
-            this.userInfo = userInfo;
-            this.roles = [userInfo.role];
-            return userInfo;
-          }
-        }
-        
         const response = await getUserInfo();
         if (response.success && response.data) {
-          this.userInfo = response.data;
-          this.roles = [response.data.role];
-          return response.data;
+          // 转换为符合@/mods/Auth.UserInfo格式的数据
+          const userInfo = {
+            id: response.data.id,
+            username: response.data.username,
+            role: response.data.roleName,
+            roleId: response.data.roleId
+          };
+          this.userInfo = userInfo;
+          this.roles = [userInfo.role];
+          return userInfo;
         } else {
           throw new Error('获取用户信息失败');
         }

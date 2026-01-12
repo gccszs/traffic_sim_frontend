@@ -1,7 +1,6 @@
 import router from './index';
 import { useAuthStore } from '@/stores/auth';
 import { ElMessage } from 'element-plus';
-import { getEnableLoginDemo } from '@/mods/Auth';
 
 // 路由守卫
 router.beforeEach(async (to, from, next) => {
@@ -10,26 +9,8 @@ router.beforeEach(async (to, from, next) => {
 
   // 获取权限状态
   const authStore = useAuthStore();
-  const enableLoginDemo = getEnableLoginDemo();
   
-  // 开发环境下的特殊处理
-  if (import.meta.env.DEV && !enableLoginDemo) {
-    // 初始化开发环境的模拟数据
-    authStore.initDevState();
-    
-    // 开发环境下直接放行所有路由，跳过登录验证
-    if (to.path === '/login') {
-      // 开发环境下访问登录页，重定向到首页
-      next({ path: '/' });
-      return;
-    }
-    
-    // 所有检查通过，放行
-    next();
-    return;
-  }
-
-  // 正常的登录验证流程（生产环境或启用登录演示时）
+  // 检查是否已登录
   const isLoggedIn = authStore.isLoggedIn;
 
   // 不需要登录的页面直接放行

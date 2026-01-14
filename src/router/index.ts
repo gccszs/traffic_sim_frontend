@@ -7,6 +7,7 @@ import LoginViewVue from '@/views/LoginView.vue'
 import RegisterViewVue from '@/views/RegisterView.vue'
 import MapManagerViewVue from '@/views/MapManagerView.vue'
 import ProfileViewVue from '@/views/ProfileView.vue'
+import UserManagerViewVue from '@/views/UserManagerView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -82,6 +83,16 @@ const router = createRouter({
       meta: {
         title: '个人中心',
         requiresAuth: true
+      }
+    },
+    {
+      path: '/usermanager',
+      name: 'usermanager',
+      component: UserManagerViewVue,
+      meta: {
+        title: '用户管理',
+        requiresAuth: true,
+        roles: [1] // 仅管理员可访问
       }
     }
   ]

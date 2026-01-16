@@ -24,7 +24,15 @@ export const useAuthStore = defineStore('auth', {
 
   getters: {
     isLoggedIn: (state) => !!state.token,
-    hasRole: (state) => (role: Number) => state.userInfo?.roleId === role,
+    hasRole: (state) => (role: string | number) => {
+      if (typeof role === 'string') {
+        // 如果是字符串，比较角色名称
+        return state.userInfo?.role === role;
+      } else {
+        // 如果是数字，比较角色ID
+        return state.userInfo?.roleId === role;
+      }
+    },
     hasPermission: (state) => (permission: string) => state.permissions.includes(permission)
   },
 

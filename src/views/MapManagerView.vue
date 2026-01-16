@@ -87,6 +87,7 @@
           <el-upload
             class="upload-demo"
             :action="uploadUrl"
+            :headers="uploadHeaders"
             :on-success="handleUploadSuccess"
             :on-error="handleUploadError"
             :file-list="fileList"
@@ -136,6 +137,19 @@ const mapFormRef = ref();
 const uploadRef = ref();
 const fileList = ref([]);
 const uploadUrl = '/api/maps/upload';
+
+// 上传请求头配置
+const uploadHeaders = ref({});
+
+// 从localStorage获取token并设置请求头
+onMounted(() => {
+  const token = localStorage.getItem('traffic_sim_token');
+  if (token) {
+    uploadHeaders.value = {
+      'Authorization': `Bearer ${token}`
+    };
+  }
+});
 
 const mapForm = reactive({
   id: '',

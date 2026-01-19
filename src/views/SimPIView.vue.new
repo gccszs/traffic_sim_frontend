@@ -1,0 +1,295 @@
+<template>
+  <el-row justify="space-around">
+    <el-col :span="3">
+      <el-row><!--这里是仿真步数-->
+        <el-col :span="24">
+          <el-descriptions :column="1" border>
+            <el-descriptions-item label="当前步数" label-align="center" align="center" label-class-name="step-label"
+              class-name="step-content">{{ cur_step_num }}</el-descriptions-item>
+          </el-descriptions>
+        </el-col>
+      </el-row>
+      <el-row style="margin-top: 10px;"><!--这里是公共属性-->
+        <el-col :span="24">
+          <el-descriptions :column="1" border>
+            <el-descriptions-item label="类型" label-align="center" align="center" label-class-name="type-label"
+              class-name="type-content">{{ click_object_type }}</el-descriptions-item>
+            <el-descriptions-item label="LinkID" label-align="center" align="center">{{ cur_obj_attr.link_id
+              }}</el-descriptions-item>
+            <el-descriptions-item label="CrossID" label-align="center" align="center">{{ cur_obj_attr.cross_id
+              }}</el-descriptions-item>
+            <el-descriptions-item label="LaneID" label-align="center" align="center">{{ cur_obj_attr.lane_id
+              }}</el-descriptions-item>
+            <el-descriptions-item label="CellID" label-align="center" align="center">{{ cur_obj_attr.cell_id
+              }}</el-descriptions-item>
+            <el-descriptions-item label="坐标X" label-align="center" align="center">{{ cur_obj_attr.x
+              }}</el-descriptions-item>
+            <el-descriptions-item label="坐标Y" label-align="center" align="center">{{ cur_obj_attr.y
+              }}</el-descriptions-item>
+          </el-descriptions>
+        </el-col>
+      </el-row>
+      <el-row style="margin-top: 10px;"><!--这里是额外属性操作-->
+        <el-col :span="24">
+          <el-descriptions v-if="click_object_type=='veh'" :column="1" border>
+            <el-descriptions-item label="车辆ID">{{ cur_obj_attr.id }}</el-descriptions-item>
+            <el-descriptions-item label="车速">{{ cur_obj_attr.cur_spd }}</el-descriptions-item>
+            <el-descriptions-item label="加速度">{{ cur_obj_attr.cur_spd - cur_obj_attr.last_spd }}</el-descriptions-item>
+            <el-descriptions-item label="路径Router">{{ cur_obj_attr.router }}</el-descriptions-item>
+          </el-descriptions>
+          <el-descriptions v-if="click_object_type=='origin'" :column="1" border>
+            <el-descriptions-item label="源点ID">{{ cur_obj_attr.id }}</el-descriptions-item>
+            <el-descriptions-item label="Plugin?">否</el-descriptions-item>
+            <el-descriptions-item label="Policy">{{ cur_obj_attr.policy }}</el-descriptions-item>
+            <el-descriptions-item label="Extra">{{ cur_obj_attr.extra }}</el-descriptions-item>
+          </el-descriptions>
+          <el-descriptions v-if="click_object_type=='signal'" :column="1" border>
+            <el-descriptions-item label="周期时间">{{ cur_obj_attr.cycle_time }}</el-descriptions-item>
+            <el-descriptions-item label="当前颜色">{{ cur_obj_attr.color }}</el-descriptions-item>
+            <el-descriptions-item label="直行绿灯(东西)">{{ cur_obj_attr.ew_straight }}</el-descriptions-item>
+            <el-descriptions-item label="左转绿灯(东西)">{{ cur_obj_attr.ew_left }}</el-descriptions-item>
+            <el-descriptions-item label="直行绿灯(南北)">{{ cur_obj_attr.sn_straight }}</el-descriptions-item>
+            <el-descriptions-item label="左转绿灯(南北)">{{ cur_obj_attr.sn_left }}</el-descriptions-item>
+          </el-descriptions>
+        </el-col>
+      </el-row>
+    </el-col>
+    <el-col :span="14"><!--此处为仿真画布-->
+      <canvas id="sim_pixi" width="1000" height="850"> </canvas>
+      <div v-if="false" style="padding: 20px; border: 2px solid black;">
+        <el-row gutter={20}> <!--假的 只能用于显示 应该放到canvas里-->
+          <el-col v-for="(image, index) in drag2new_imgs" :key="index" :span="4">
+            <div style="display: flex; justify-content: center; align-items: center; border: 1px solid black; padding: 10px; background-color: #f0f0f0;">
+              <img :src="image" alt="image" style="max-width: 100%; height: auto; display: block;" />
+            </div>
+          </el-col>
+        </el-row>
+      </div>
+    </el-col>
+    <el-col :span="6">
+      <div>
+        <!--此div为日志区域-->
+        <el-table :data="tableData" style="width: 100%; min-height: 380px; overflow: auto;" max-height="450">
+          <el-table-column fixed prop="date" label="时间" min-width="60" />
+          <el-table-column prop="event" label="事件" min-width="120" />
+          <el-table-column fixed="right" label="操作" minwidth="30">
+            <template #default="scope">
+              <el-button link type="primary" size="small" @click.prevent="deleteRow(scope.$index)">
+                删除
+              </el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
+      <div>
+        <!--此div为设置区域(控制面板)-->
+        <el-card style="width: 100%" shadow="hover">
+          <el-row justify="space-between">
+            <el-col :span="6">
+              <el-button type="primary" @click="OnClickStart">开始仿真</el-button>
+            </el-col>
+            <el-col :span="6">
+              <el-button type="info" @click="OnClickPause">暂停仿真</el-button>
+            </el-col>
+            <el-col :span="6">
+              <el-button type="danger" @click="OnClickStop">停止仿真</el-button>
+            </el-col>
+          </el-row>
+          <el-row justify="space-between" style="margin-top: 5px">
+            <el-col :span="6">
+              <el-button color="#626aef" @click="OnClickChangeBgDisplay('road')">道路标号</el-button>
+            </el-col>
+            <el-col :span="6">
+              <el-button color="#626aef" @click="OnClickChangeBgDisplay('cross')">路口标号</el-button>
+            </el-col>
+            <el-col :span="6">
+              <el-button color="#626aef" @click="OnClickChangeBgDisplay('all')">全部显示</el-button>
+            </el-col>
+            <el-col :span="6">
+              <el-button color="#626aef" @click="OnClickChangeBgDisplay('close')">关闭显示</el-button>
+            </el-col>
+          </el-row>
+          <el-row :gutter="3" style="margin-top: 10px">
+            <el-col :span="4" style="margin-top: 3px">
+              <el-tooltip effect="dark" content="最大仿真步数" placement="bottom-start">
+                <el-text class="mx-1" size="large" style="border: 1px solid var(--el-border-color)" 
+                  type="primary">Step:</el-text>
+              </el-tooltip>
+            </el-col>
+            <el-col :span="16">
+              <el-input v-model="input_max_step" placeholder="自动停止最大步数(0为不停止)" />
+            </el-col>
+            <el-col :span="2">
+              <el-button type="primary" :icon="Check" @click="OnClickSetMaxStep(Number(input_max_step))" />
+            </el-col>
+          </el-row>
+          <el-row style="margin-top: 10px">
+            <el-col :span="6" style="margin-top: 3px">
+              <el-tooltip effect="dark" content="仿真的最小单位" placement="bottom-start">
+                <el-text class="mx-1" size="large" style="border: 1px solid var(--el-border-color)" 
+                  type="primary">粒度:</el-text>
+              </el-tooltip>
+            </el-col>
+            <el-col :span="17">
+              <el-radio-group v-model="precision_radio" size="small" style="margin-top: 4px;" 
+                @change="OnClickChangeSimPrecision">
+                <el-radio label="step" border>一个仿真步</el-radio>
+                <el-radio label="ope" border>一个内操作</el-radio>
+              </el-radio-group>
+            </el-col>
+          </el-row>
+          <el-row justify="space-between" style="margin-top: 10px">
+            <el-col :span="6"><el-button color="#626aef" @click="sim_pixi.resetBgPos()">重置路网位置</el-button></el-col>
+            <el-col :span="7">
+              <el-drawer v-model="open_plugin_drawer" title="修改插件代码" direction="rtl" 
+                :before-close="handlePluginDrawerClose">
+                <el-tabs type="border-card" v-model="cur_plugin_code_tab" @tab-click="handleClickPluginTab">
+                  <el-tab-pane v-for="(tab, index) in plugin_code_tabs" :key="tab.id" :label="tab.label" :name="tab.id">
+                    <div><el-input v-model="plugin_code" style="width: 470px" :rows="20" type="textarea" 
+                        placeholder="输入插件代码" /></div>
+                    <div style="margin-top: 10px"><el-button type="danger" plain 
+                        @click="handleChangePluginCode(tab.id, plugin_code)">应用修改代码</el-button></div>
+                  </el-tab-pane>
+                </el-tabs>
+              </el-drawer>
+              <el-button color="#626aef" @click="open_plugin_drawer=true">打开插件面板</el-button>
+            </el-col>
+          </el-row>
+        </el-card>
+      </div>
+    </el-col>
+  </el-row>
+</template>
+
+<script lang="ts" setup>
+import { onMounted, onUnmounted, ref } from "vue";
+//import { io } from 'socket.io-client'; //使用WebSocket进行实时通信
+import { Check } from "@element-plus/icons-vue";
+import { ElNotification, type TabsPaneContext } from 'element-plus'
+import { ElLoading, ElMessage, ElMessageBox } from "element-plus";
+import { onBeforeRouteLeave } from 'vue-router';
+import { GetAuthIdOnce, DelAuthIdOnce, GetPluginInfo } from '@/apis/SimPIApi'
+import { CreateSimEng, GetPluginCode } from '@/apis/SimEngApi'
+import { TimeUtils } from "../mods/Utils";
+import { SimPIXI, Veh, Phase } from "@/mods/SimPIXI"
+// @ts-ignore
+import { generate_thumbnail, get_roadnetwork_xy } from '@/views/SimSteps/js/sim'
+import router from "@/router";
+
+const sim_pixi_x = 1000, sim_pixi_y = 650;
+let sim_pixi = new SimPIXI(sim_pixi_x, sim_pixi_y); //仿真画布 使用PIXI
+let bg_pics = {none:'', withRoadNume:'', withCrossNume:'', withAll:''};
+
+const sim_info = JSON.parse(sessionStorage.getItem('sim_info') as string);
+const control_views = JSON.parse(sessionStorage.getItem('control_views') as string);
+
+let loading_instance:any = null;
+
+const input_max_step = ref("");
+const each_step_delay = ref(0);
+const precision_radio = ref('ope');
+
+const open_plugin_drawer = ref(false);
+const cur_plugin_code_tab = ref(1);
+const plugin_code = ref("");
+const plugin_code_tabs = ref([ { label: '跟驰插件', name:"test", id: 1}]);
+const cur_step_num = ref(1);
+const click_object_type = ref('veh');
+const cur_obj_attr = ref({
+  id: -1,
+  cur_spd: 0,
+  last_spd: 0,
+  link_id: 0,
+  cross_id: 0,
+  lane_id: 0,
+  cell_id: 0,
+  router: "",
+  policy: "None",
+  extra: 0,
+  cycle_time: 0,
+  ew_left: 0,
+  ew_straight: 0,
+  sn_left: 0,
+  sn_straight: 0,
+  color: 'None',
+  x: 0.0,
+  y: 0.0
+});
+
+const drag2new_imgs = ref(['/sim_imgs/car01.png', '/sim_imgs/car02.png', '/sim_imgs/car03.png', '/sim_imgs/zhangai_40x20.png']); //用于展示'拖拽新建'的物体 [假的 未完成]
+
+const tableData = ref([{date: '现在', event: '初始化完毕'}]);
+
+const deleteRow = (index: number) => {
+  tableData.value.splice(index, 1);
+};
+
+const handleClickPluginTab = (pane: TabsPaneContext, ev: Event):void => {
+  let cur_info = null;
+  for (let info of plugin_code_tabs.value) {
+    if (info.id == pane.paneName) {
+      cur_info = info;
+      break;
+    }    
+  }
+  if (cur_info !== null) {
+    const plugin_name = cur_info.name;
+    GetPluginCode(plugin_name).then((code_text) => {
+      plugin_code.value = code_text;
+    });
+  }
+}
+
+const handlePluginDrawerClose = (done: () => void) => {
+  ElMessageBox.confirm('确定要关闭插件代码修改窗口吗?请注意应用代码')
+    .then(() => {
+      done()
+    })
+    .catch(() => {
+      // catch error
+    })
+}
+
+function handleChangePluginCode(tab_id:number, new_code:string) {
+  console.log(new_code);//TODO: 发送修改代码逻辑
+}
+
+function AddLogPanelMsg(msg:string, time:string = "") {
+  let time_str = time;
+  if (!time || time.trim().length === 0) {
+    time_str = TimeUtils.timestampToString(TimeUtils.getTimestamp(), "HH:mm:ss");
+  }
+  const event_obj = {date: time_str, event: msg};
+  tableData.value.unshift(event_obj);
+}
+
+function OnClickChangeSimPrecision(value:string) {
+  console.log("sim pre:" + value);
+}
+
+function OnClickChangeBgDisplay(value:string) {
+  let bg_pic = '';
+  if (value == "road") {
+    bg_pic = bg_pics.withRoadNume;
+  } else if (value == "cross") {
+    bg_pic = bg_pics.withCrossNume;
+  } else if (value == "all") {
+    bg_pic = bg_pics.withAll;
+  } else if (value == "close") {
+    bg_pic = bg_pics.none;
+  }
+  sim_pixi.setRoadNetworkBg(bg_pic);
+}
+
+//值改变时触发(使用鼠标拖曳时，只在松开鼠标后触发)
+function OnSliderChangeDelay(value: number | number[]): boolean {
+  let delay_msg = {type: "eng", ope:"setdelay", time: 0, data:{Delay:0}};
+  let timestamp = Date.now();
+  delay_msg.time = timestamp;
+  delay_msg.data.Delay = value as number;
+  ws?.send(JSON.stringify(delay_msg));
+  return true;
+}
+
+// WebSocket 实例声明
+let

@@ -249,8 +249,8 @@ function generate_thumbnail(road_data, lane_num, displayroadNume, displaycrossNu
   const xlength = max_x - min_x;
   const ylength = max_y - min_y;
   const canvas = document.createElement('canvas');
-  // if ((extra_x%2) != 0) extra_x += 1; //不是偶数改为偶数
-  // if ((extra_y%2) != 0) extra_y += 1;
+  if ((extra_x%2) != 0) extra_x += 1; //不是偶数改为偶数
+  if ((extra_y%2) != 0) extra_y += 1;
 
   canvas.width = xlength + extra_x;
   canvas.height = ylength + extra_y;
@@ -261,10 +261,8 @@ function generate_thumbnail(road_data, lane_num, displayroadNume, displaycrossNu
   road_data_copy.MarginalPoint.forEach((item) => {
     // item.x = ((parseInt(item.x) - min_x) + padding_x).toString(); 
     // item.y = ((parseInt(item.y) - min_y) + padding_y).toString();
-    // item.x = parseInt(item.x) - min_x + padding_x
-    // item.y = parseInt(item.y) - min_y + padding_y
-    item.x = parseInt(item.x)
-    item.y = parseInt(item.y)
+    item.x = parseInt(item.x) - min_x + padding_x
+    item.y = parseInt(item.y) - min_y + padding_y
   });
 
   road_data_copy.Cross.forEach((item) => {

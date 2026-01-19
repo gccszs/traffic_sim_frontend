@@ -4,7 +4,7 @@ import request from '@/mods/Axios';
  * @brief 向后端请求创建一个仿真引擎 一个实例只能创建一个
  */
 export function CreateSimEng(sim_info:any, control_views:any) {
-    return request.post("/create_simeng", {"sim_info": sim_info, "control_views": control_views})
+    return request.post("/simulation/create", {"simInfo": sim_info, "controlViews": control_views})
     .then(function (response) {
       return response.data;
     })

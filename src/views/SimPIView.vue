@@ -303,7 +303,7 @@ function OnSliderChangeDelay(value: number | number[]): boolean {
 }
 
 // 使用标准 WebSocket API DEV环境为localhost 生产环境为ip
-const ws = new WebSocket("ws://127.0.0.1:3822/ws/frontend");
+const ws = new WebSocket("ws://192.168.1.212/ws/frontend");
 
 // 监听连接建立
 ws.onopen = () => {

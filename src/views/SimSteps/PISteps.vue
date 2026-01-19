@@ -592,17 +592,17 @@ const radio_map_format = ref("txt");
 const uploadHeaders = ref({});
 
 // 上传URL配置
-const uploadUrl = ref('/api/map/upload');
+const uploadUrl = ref("/api/map/upload");
 
 // 地图名称
-const mapName = ref('');
+const mapName = ref("");
 
 // 从localStorage获取token并设置请求头
 onMounted(() => {
-  const token = localStorage.getItem('traffic_sim_token');
+  const token = localStorage.getItem("traffic_sim_token");
   if (token) {
     uploadHeaders.value = {
-      'Authorization': `Bearer ${token}`
+      Authorization: `Bearer ${token}`,
     };
   }
 });
@@ -610,33 +610,34 @@ onMounted(() => {
 // 自定义上传方法
 const customUpload = async (options: any) => {
   const { file, onSuccess, onError } = options;
-  
+
   try {
     // 验证地图名称
     if (!mapName.value.trim()) {
-      ElMessage.error('请输入地图名称');
-      onError(new Error('请输入地图名称'));
+      ElMessage.error("请输入地图名称");
+      onError(new Error("请输入地图名称"));
       return;
     }
-    
+
     // 创建FormData对象
     const formData = new FormData();
-    formData.append('file', file);
-    formData.append('name', mapName.value.trim());
-    
+    formData.append("file", file);
+    formData.append("name", mapName.value.trim());
+
     // 发送请求（使用项目现有的axios实例）
-    const response = await request.post('/map/upload', formData, {
+    const response = await request.post("/map/upload", formData, {
       headers: {
-        ...uploadHeaders.value
+        ...uploadHeaders.value,
         // 注意：不要手动设置Content-Type，axios会自动根据FormData设置正确的Content-Type
       },
-      withCredentials: true
+      withCredentials: true,
     });
-    
-    if (response.data.res === 'ERR_OK') {
+
+    if (response.data.res === "ERR_OK") {
+      sim_info.value.mapId = response.data.data.addition?.mapId.toString();
       onSuccess(response.data, file, []);
     } else {
-      onError(new Error(response.data.msg || '上传失败'));
+      onError(new Error(response.data.msg || "上传失败"));
     }
   } catch (error: any) {
     onError(error);

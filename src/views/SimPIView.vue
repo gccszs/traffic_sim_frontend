@@ -303,7 +303,21 @@ function OnSliderChangeDelay(value: number | number[]): boolean {
 }
 
 // 使用标准 WebSocket API DEV环境为localhost 生产环境为ip
-const ws = new WebSocket("ws://192.168.1.212/ws/frontend");
+// 从localStorage获取userId
+let userId = '';
+try {
+  const userInfoStr = localStorage.getItem('traffic_sim_user_info');
+  if (userInfoStr) {
+    const userInfo = JSON.parse(userInfoStr);
+    userId = userInfo.id || '';
+  }
+} catch (error) {
+  console.error('Failed to parse user info:', error);
+}
+
+// 构建WebSocket URL，拼接userId
+const wsUrl = userId ? `ws://192.168.1.212:3822/ws/frontend/${userId}` : 'ws://192.168.1.212:3822/ws/frontend';
+const ws = new WebSocket(wsUrl);
 
 // 监听连接建立
 ws.onopen = () => {

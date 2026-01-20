@@ -136,7 +136,7 @@ const dialogVisible = ref(false);
 const mapFormRef = ref();
 const uploadRef = ref();
 const fileList = ref([]);
-const uploadUrl = '/api/maps/upload';
+const uploadUrl = '/maps/upload';
 
 // 上传请求头配置
 const uploadHeaders = ref({});

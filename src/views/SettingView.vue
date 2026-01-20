@@ -12,7 +12,7 @@
       </div>
     </el-col>
     <el-col :span="18">
-      <el-upload class="upload-demo" drag action="/api/upload_plugin" accept=".zip" multiple
+      <el-upload class="upload-demo" drag action="/upload_plugin" accept=".zip" multiple
         :headers="uploadHeaders" :before-upload="onBeforeUploadPluginZip" :on-success="onUploadPluginZipSuc" :on-error="onUploadPluginZipErr">
         <el-icon class="el-icon--upload"><upload-filled /></el-icon>
         <div class="el-upload__text">

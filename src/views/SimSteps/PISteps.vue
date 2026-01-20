@@ -592,7 +592,7 @@ const radio_map_format = ref("txt");
 const uploadHeaders = ref({});
 
 // 上传URL配置
-const uploadUrl = ref("/api/map/upload");
+const uploadUrl = ref("/map/upload");
 
 // 地图名称
 const mapName = ref("");

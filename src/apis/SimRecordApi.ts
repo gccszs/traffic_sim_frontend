@@ -2,7 +2,7 @@ import request from '@/mods/Axios';
 
 // 定义仿真记录类型（从API返回的原始字段）
 export interface ApiSimRecordRaw {
-  taskid: string;
+  taskId: string;
   name: string;
   mapid: string | null;
   mapName: string | null;
@@ -36,6 +36,7 @@ export interface SimRecordListResponseRaw {
 // 定义前端使用的仿真记录类型（转换后的字段）
 export interface SimRecord {
   id: number;
+  taskId: string;
   name: string;
   map_name: string;
   description: string;
@@ -71,21 +72,37 @@ export function getSimRecords(params: {
     .then((response) => {
       const rawResponse = response.data as SimRecordListResponseRaw;
       
+      // 打印原始API响应，用于调试
+      console.log('原始API响应:', rawResponse);
+      
       // 转换响应数据格式
       if (rawResponse.res === 'ERR_OK' && rawResponse.data) {
+        // 打印原始记录列表，用于调试
+        console.log('原始记录列表:', rawResponse.data.records);
+        
         // 转换记录列表
-        const convertedRecords = rawResponse.data.records.map(record => ({
-          id: parseInt(record.taskid) || 0,
-          name: record.name || '',
-          map_name: record.mapName || '',
-          description: '', // API返回中没有description字段，使用空字符串
-          status: record.status || 'unknown',
-          create_time: record.createTime || '', // 使用createTime作为仿真时间
-          update_time: record.updateTime || '',
-          user_name: record.userid || '',
-          duration: 0, // API返回中没有duration字段，使用0
-          detail_info: JSON.stringify(record.additionalFields || {})
-        }));
+        const convertedRecords = rawResponse.data.records.map(record => {
+          console.log('原始记录:', record);
+          console.log('原始记录的taskId:', record.taskId);
+          console.log('原始记录的taskid:', record.taskid);
+          
+          const convertedRecord = {
+            id: parseInt(record.taskId || record.taskid) || 0,
+            taskId: record.taskId || record.taskid || '',
+            name: record.name || '',
+            map_name: record.mapName || '',
+            description: '', // API返回中没有description字段，使用空字符串
+            status: record.status || 'unknown',
+            create_time: record.createTime || '', // 使用createTime作为仿真时间
+            update_time: record.updateTime || '',
+            user_name: record.userid || '',
+            duration: 0, // API返回中没有duration字段，使用0
+            detail_info: JSON.stringify(record.additionalFields || {})
+          };
+          
+          console.log('转换后的记录:', convertedRecord);
+          return convertedRecord;
+        });
         
         return {
           success: true,

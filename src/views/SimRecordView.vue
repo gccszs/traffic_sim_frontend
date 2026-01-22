@@ -50,6 +50,7 @@
         stripe
         border
         highlight-current-row
+        row-key="id"
       >
         <el-table-column prop="name" label="仿真名称" min-width="180" />
         <el-table-column prop="map_name" label="地图名称" min-width="180" />
@@ -175,9 +176,11 @@
 
 <script lang="ts" setup>
 import { ref, reactive, onMounted } from 'vue';
-import { ElMessage, ElMessageBox } from 'element-plus';
+import { useRouter } from 'vue-router';
+import { ElMessage, ElMessageBox, ElLoading } from 'element-plus';
 import { Search, Refresh, View, Edit, Delete } from '@element-plus/icons-vue';
 import { getSimRecords } from '@/apis/SimRecordApi';
+import request from '@/mods/Axios';
 import type { SimRecord as ApiSimRecord } from '@/apis/SimRecordApi';
 
 // 使用API中定义的仿真记录类型
@@ -194,6 +197,9 @@ const statusTypeMap = {
 const getStatusType = (status: string) => {
   return statusTypeMap[status as keyof typeof statusTypeMap] || 'info';
 };
+
+// 获取路由器实例
+const router = useRouter();
 
 // 响应式数据
 const loading = ref(true);
@@ -215,6 +221,7 @@ const records = ref<SimRecord[]>([]);
 const detailDialogVisible = ref(false);
 const detailForm = ref<SimRecord>({
   id: 0,
+  taskId: '',
   name: '',
   map_name: '',
   description: '',
@@ -315,16 +322,77 @@ const handleCurrentChange = (current: number) => {
   fetchRecords();
 };
 
-// 查看详情
-const handleViewDetail = (record: SimRecord) => {
-  detailForm.value = { ...record };
-  detailDialogVisible.value = true;
+// 查看详情 - 新功能：获取回放数据并导航到回放页面
+const handleViewDetail = async (record: SimRecord) => {
+  // 打印接收到的record，用于调试
+  console.log('handleViewDetail接收到的record:', record);
+  
+  // 显示加载状态
+  const loading = ElLoading.service({
+    lock: true,
+    text: '正在加载回放数据...',
+    background: 'rgba(0, 0, 0, 0.7)'
+  });
+
+  try {
+    // 从当前行记录中获取taskId参数，同时检查taskId和taskid字段
+    const taskId = record.taskId || record.taskid;
+    
+    console.log('获取到的taskId:', taskId);
+    
+    if (!taskId) {
+      loading.close();
+      ElMessage.error('该记录没有taskId，无法查看回放');
+      return;
+    }
+
+    // 发起GET请求至接口：/replay/map?{taskId}
+    const response = await request.get(`/replay/map?taskId=${taskId}`);
+    
+    // 检查响应结果
+    if (response.data && response.data.res === 'ERR_OK') {
+      // 请求成功，将mapInfo数据存储到sessionStorage中
+      sessionStorage.setItem('replay_mapInfo', JSON.stringify(response.data.data.mapInfo));
+      sessionStorage.setItem('replay_taskId', taskId);
+      
+      loading.close();
+      
+      // 导航至回放页面
+      router.push({
+        name: 'simreplay',
+        params: {
+          taskId: taskId
+        }
+      });
+    } else {
+      loading.close();
+      ElMessage.error(response.data?.msg || '获取回放数据失败');
+    }
+  } catch (error: any) {
+    loading.close();
+    console.error('获取回放数据失败:', error);
+    
+    // 提供更详细的错误信息
+    if (error.response) {
+      // 服务器返回错误状态码
+      const status = error.response.status;
+      const errorMsg = error.response.data?.msg || '服务器错误';
+      ElMessage.error(`请求失败 (${status}): ${errorMsg}`);
+    } else if (error.request) {
+      // 请求已发送但没有收到响应
+      ElMessage.error('网络错误，请检查网络连接后重试');
+    } else {
+      // 请求配置出错
+      ElMessage.error('请求配置错误，请稍后重试');
+    }
+  }
 };
 
 // 重置详情表单
 const resetDetailForm = () => {
   detailForm.value = {
     id: 0,
+    taskId: '',
     name: '',
     map_name: '',
     description: '',

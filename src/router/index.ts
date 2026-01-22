@@ -8,6 +8,7 @@ import RegisterViewVue from '@/views/RegisterView.vue'
 import MapManagerViewVue from '@/views/MapManagerView.vue'
 import ProfileViewVue from '@/views/ProfileView.vue'
 import UserManagerViewVue from '@/views/UserManagerView.vue'
+import SimRecordViewVue from '@/views/SimRecordView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -73,6 +74,15 @@ const router = createRouter({
       component: MapManagerViewVue,
       meta: {
         title: '地图管理',
+        requiresAuth: true
+      }
+    },
+    {
+      path: '/simrecords',
+      name: 'simrecords',
+      component: SimRecordViewVue,
+      meta: {
+        title: '仿真记录管理',
         requiresAuth: true
       }
     },

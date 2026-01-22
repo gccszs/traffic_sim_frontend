@@ -301,7 +301,7 @@ import { ElNotification, type TabsPaneContext } from 'element-plus'
 import { ElLoading, ElMessage, ElMessageBox } from "element-plus";
 import { onBeforeRouteLeave } from 'vue-router';
 import { GetAuthIdOnce, DelAuthIdOnce, GetMapJson, GetPluginInfo } from '@/apis/SimPIApi'
-import { CreateSimEng, GetPluginCode } from '@/apis/SimEngApi'
+import { PrepareSimulation, CreateSimEng, GetPluginCode } from '@/apis/SimEngApi'
 import { TimeUtils } from "../mods/Utils";
 import { SimPIXI, Veh, Phase } from "@/mods/SimPIXI"
 // @ts-ignore
@@ -318,6 +318,9 @@ const sim_info = JSON.parse(sessionStorage.getItem('sim_info') as string);
 const control_views = JSON.parse(sessionStorage.getItem('control_views') as string);
 
 let loading_instance:any = null;
+
+// 添加taskId变量
+const taskId = ref("");
 
 const input_max_step = ref("");
 const each_step_delay = ref(0);
@@ -966,7 +969,7 @@ function OnSliderChangeDelay(value: number | number[]): boolean {
   let timestamp = Date.now();
   delay_msg.time = timestamp;
   delay_msg.data.Delay = value as number;
-  ws.send(JSON.stringify(delay_msg));
+  ws.value?.send(JSON.stringify(delay_msg));
   return true;
 }
 
@@ -983,21 +986,31 @@ try {
   console.error('Failed to parse user info:', error);
 }
 
-// 构建WebSocket URL，拼接userId
-const wsUrl = userId ? `ws://192.168.1.212:3822/ws/frontend/${userId}` : 'ws://192.168.1.212:3822/ws/frontend';
-const ws = new WebSocket(wsUrl);
+// 将ws改为ref类型，以便在组件的其他部分使用
+const ws = ref<WebSocket | null>(null);
 
-// 监听连接建立
-ws.onopen = () => {
-  console.log("WebSocket connected");
-  let hello_msg = {type: "backend", ope:"hello", time: 0};
-  let timestamp = Date.now();
-  hello_msg.time = timestamp;
-  ws.send(JSON.stringify(hello_msg));
-};
-
-// 监听消息接收
-ws.onmessage = (event) => {
+// 初始化WebSocket连接的函数
+function initWebSocket() {
+  if (!taskId.value) {
+    console.error("taskId is empty, cannot establish WebSocket connection");
+    return;
+  }
+  
+  // 构建WebSocket URL，使用taskId
+  const wsUrl = `ws://192.168.1.212:3822/ws/frontend/${taskId.value}`;
+  ws.value = new WebSocket(wsUrl);
+  
+  // 监听连接建立
+  ws.value.onopen = () => {
+    console.log("WebSocket connected");
+    let hello_msg = {type: "backend", ope:"hello", time: 0};
+    let timestamp = Date.now();
+    hello_msg.time = timestamp;
+    ws.value?.send(JSON.stringify(hello_msg));
+  };
+  
+  // 监听消息接收
+  ws.value.onmessage = (event) => {
   //console.log("Message from server:", event.data);
   let msg_obj = JSON.parse(event.data);
   if (msg_obj.type == 'frontend') { //只处理发给前端的消息
@@ -1018,7 +1031,7 @@ ws.onmessage = (event) => {
           set_plugin_msg.time = timestamp;
           set_plugin_msg.data.ConType = p_type;
           set_plugin_msg.data.Name = p_name;
-          ws.send(JSON.stringify(set_plugin_msg));
+          ws.value?.send(JSON.stringify(set_plugin_msg));
         }
       }
 
@@ -1163,13 +1176,14 @@ ws.onmessage = (event) => {
 };
 
 // 监听连接关闭
-ws.onclose = () => {
-  console.log("WebSocket connection closed");
-};
-
-// 监听错误
-ws.onerror = (error) => {
-  console.error("WebSocket error:", error);
+  ws.value.onclose = () => {
+    console.log("WebSocket connection closed");
+  };
+  
+  // 监听错误
+  ws.value.onerror = (error) => {
+    console.error("WebSocket error:", error);
+  };
 };
 
 function OnClickStart() {
@@ -1180,21 +1194,21 @@ function OnClickStart() {
   let start_msg = { type:"eng", ope:"start", time:0};
   let timestamp = Date.now();
   start_msg.time = timestamp;
-  ws.send(JSON.stringify(start_msg));
+  ws.value?.send(JSON.stringify(start_msg));
 }
 
 function OnClickPause() {
   let pause_msg = { type:"eng", ope:"pause", time:0};
   let timestamp = Date.now();
   pause_msg.time = timestamp;
-  ws.send(JSON.stringify(pause_msg));
+  ws.value?.send(JSON.stringify(pause_msg));
 }
 
 function OnClickStop() {
   let stop_msg = { type:"eng", ope:"stop", time:0};
   let timestamp = Date.now();
   stop_msg.time = timestamp;
-  ws.send(JSON.stringify(stop_msg));
+  ws.value?.send(JSON.stringify(stop_msg));
 }
 
 function OnClickSetMaxStep(step_num:number) {
@@ -1202,7 +1216,7 @@ function OnClickSetMaxStep(step_num:number) {
   let timestamp = Date.now();
   setmaxstep_msg.time = timestamp;
   setmaxstep_msg.data.Step = step_num;
-  ws.send(JSON.stringify(setmaxstep_msg));
+  ws.value?.send(JSON.stringify(setmaxstep_msg));
 }
 
 onMounted(() => {
@@ -1301,9 +1315,24 @@ onMounted(() => {
   plugin_code_tabs.value = plugin_code_tab_names;
   if (plugin_code_tab_names.length > 0) cur_plugin_code_tab.value = plugin_code_tab_names[0].id;
   
-  CreateSimEng(sim_info, control_views).then(rep => {
-    //console.log(rep);
-    AddLogPanelMsg("请求创建仿真引擎完成");
+  // 获取taskId
+  PrepareSimulation().then(rep => {
+    if (rep && rep.res === "ERR_OK") {
+      taskId.value = rep.data;
+      AddLogPanelMsg("获取taskId成功: " + taskId.value);
+      
+      // 初始化WebSocket连接
+      initWebSocket();
+      
+      // 调用仿真引擎启动接口
+      CreateSimEng(taskId.value, sim_info, control_views).then(rep => {
+        //console.log(rep);
+        AddLogPanelMsg("请求创建仿真引擎完成");
+      });
+    } else {
+      AddLogPanelMsg("获取taskId失败");
+      console.error("获取taskId失败:", rep);
+    }
   });
 
 });
@@ -1339,7 +1368,7 @@ function resetStatisticsData() {
 // 在组件卸载时断开连接
 onUnmounted(() => {
   OnClickStop();//触发一次关闭引擎的操作
-  ws.close();
+  ws.value?.close();
   // 销毁图表实例
   if (chartVehicleSpeed) {
     chartVehicleSpeed.dispose();
@@ -1359,8 +1388,8 @@ onBeforeRouteLeave((to, from, next) => {
     let stop_msg = { type:"eng", ope:"stop", time:0};
     let timestamp = Date.now();
     stop_msg.time = timestamp;
-    ws.send(JSON.stringify(stop_msg));
-    ws.close();
+    ws.value?.send(JSON.stringify(stop_msg));
+    ws.value?.close();
     next();  // 允许导航
   } else {
     next(false);  // 阻止导航

@@ -24,6 +24,10 @@
       <el-icon><histogram /></el-icon>
       <template #title>历史数据</template>
     </el-menu-item>
+    <el-menu-item index="/simrecords">
+      <el-icon><document /></el-icon>
+      <template #title>仿真记录管理</template>
+    </el-menu-item>
     <el-menu-item index="/mapmanager">
       <el-icon><location /></el-icon>
       <template #title>地图管理</template>
@@ -42,7 +46,7 @@
 
 <script lang="ts" setup>
 import { onMounted, ref, computed } from "vue";
-import { Histogram, Menu as IconMenu, Setting, Fold, Expand, Location, UserFilled } from "@element-plus/icons-vue";
+import { Histogram, Menu as IconMenu, Setting, Fold, Expand, Location, UserFilled, Document } from "@element-plus/icons-vue";
 import { useAuthStore } from '@/stores/auth';
 
 const foldAside = ref(false);

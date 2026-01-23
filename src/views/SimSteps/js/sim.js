@@ -223,9 +223,6 @@ function set_road(sim_canvas, road_data, lane_num) {
   sim_canvas.marginalscross = data.crosses_points
 }
 
-const extra_x = 100;
-const extra_y = 100;
-
 /**
  * 生成道路缩略图，返回值为dataURL
  * @returns {string} 缩略图的URL
@@ -249,6 +246,10 @@ function generate_thumbnail(road_data, lane_num, displayroadNume, displaycrossNu
   const xlength = max_x - min_x;
   const ylength = max_y - min_y;
   const canvas = document.createElement('canvas');
+  
+  // 使用局部变量，避免修改全局状态
+  let extra_x = 100;
+  let extra_y = 100;
   if ((extra_x%2) != 0) extra_x += 1; //不是偶数改为偶数
   if ((extra_y%2) != 0) extra_y += 1;
 
@@ -319,7 +320,16 @@ function get_roadnetwork_xy(road_data, type) {
     const max_y = Math.max.apply(null, yarray);
     return {x: max_x, y: max_y};
   } else if (type == 'start') {
-    return {x: extra_x / 2, y: extra_y / 2};
+    // 与generate_thumbnail函数使用完全相同的逻辑计算padding
+    let extra_x = 100;
+    let extra_y = 100;
+    if ((extra_x%2) != 0) extra_x += 1; //不是偶数改为偶数
+    if ((extra_y%2) != 0) extra_y += 1;
+    
+    const padding_x = extra_x / 2;
+    const padding_y = extra_y / 2;
+    
+    return {x: padding_x, y: padding_y};
   }
   return {x: 0, y: 0}
 }

@@ -84,11 +84,10 @@ export function getSimRecords(params: {
         const convertedRecords = rawResponse.data.records.map(record => {
           console.log('原始记录:', record);
           console.log('原始记录的taskId:', record.taskId);
-          console.log('原始记录的taskid:', record.taskid);
           
           const convertedRecord = {
-            id: parseInt(record.taskId || record.taskid) || 0,
-            taskId: record.taskId || record.taskid || '',
+            id: parseInt(record.taskId) || 0,
+            taskId: record.taskId || '',
             name: record.name || '',
             map_name: record.mapName || '',
             description: '', // API返回中没有description字段，使用空字符串

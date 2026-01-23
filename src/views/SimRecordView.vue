@@ -335,8 +335,8 @@ const handleViewDetail = async (record: SimRecord) => {
   });
 
   try {
-    // 从当前行记录中获取taskId参数，同时检查taskId和taskid字段
-    const taskId = record.taskId || record.taskid;
+    // 从当前行记录中获取taskId参数
+    const taskId = record.taskId;
     
     console.log('获取到的taskId:', taskId);
     
@@ -346,13 +346,14 @@ const handleViewDetail = async (record: SimRecord) => {
       return;
     }
 
-    // 发起GET请求至接口：/replay/map?{taskId}
-    const response = await request.get(`/replay/map?taskId=${taskId}`);
+    // 发起GET请求至接口：/replay/map/{taskId}
+    const response = await request.get(`/replay/map/${taskId}`);
     
     // 检查响应结果
     if (response.data && response.data.res === 'ERR_OK') {
       // 请求成功，将mapInfo数据存储到sessionStorage中
-      sessionStorage.setItem('replay_mapInfo', JSON.stringify(response.data.data.mapInfo));
+      const mapInfoData = response.data.data.addition || {};
+      sessionStorage.setItem('replay_mapInfo', JSON.stringify(mapInfoData));
       sessionStorage.setItem('replay_taskId', taskId);
       
       loading.close();

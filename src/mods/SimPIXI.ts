@@ -466,8 +466,17 @@ export class SimPIXI {
       event.preventDefault();
       const zoomFactor = 0.1;
       const scaleDelta = event.deltaY > 0 ? 1 + zoomFactor : 1 - zoomFactor;
-      this.m_app.stage.scale.x *= scaleDelta;
-      this.m_app.stage.scale.y *= scaleDelta;
+      
+      // 更新缩放比例，并确保缩放范围在合理区间
+      this.m_world_scale *= scaleDelta;
+      this.m_world_scale = Math.max(0.1, Math.min(5, this.m_world_scale));
+      
+      // 应用缩放
+      this.m_app.stage.scale.x = this.m_world_scale;
+      this.m_app.stage.scale.y = this.m_world_scale;
+      
+      // 确保缩放后元素仍然可见
+      event.stopPropagation();
     });
 
     this.m_app.stage.sortableChildren = true;
@@ -541,8 +550,13 @@ export class SimPIXI {
       background.zIndex = -1; //放到最底层 (没有作用, 之后再改)
       this.m_world_container.addChild(background);
 
+      // 重置world_container的尺寸和位置
       this.m_world_container.width = background.width;
       this.m_world_container.height = background.height;
+      
+      // 居中显示背景图，同时考虑当前窗口大小
+      this.m_world_container.x = (this.m_app.screen.width - background.width) / 2;
+      this.m_world_container.y = (this.m_app.screen.height - background.height) / 2;
 
       // 将Sprite位置设置为Container的(0,0)处
       background.anchor.set(0, 0);
@@ -566,15 +580,59 @@ export class SimPIXI {
     return Math.floor(Math.random() * (max - min + 1)) + min;
   }
 
-  //坐标转换
+  // 坐标转换 - 与generate_thumbnail函数完全一致
+  // 地图背景生成时的转换：x_converted = (x_original - min_x) + padding_x
+  // 动态元素也需要进行相同的转换，才能与地图背景匹配
   convertCoordinateX(x:number) {
-    const true_x = (x - this.m_bg.rn_min_x) + this.m_bg.rn_start_x;
-    return true_x;
+    const min_x = this.m_bg.rn_min_x;
+    const padding_x = this.m_bg.rn_start_x;
+    const converted_x = (x - min_x) + padding_x;
+    return converted_x;
   }
 
   convertCoordinateY(y:number) {
-    const true_y = (y - this.m_bg.rn_min_y) + this.m_bg.rn_start_y;
-    return true_y;
+    const min_y = this.m_bg.rn_min_y;
+    const padding_y = this.m_bg.rn_start_y;
+    const converted_y = (y - min_y) + padding_y;
+    return converted_y;
+  }
+
+  /**
+   * @description 更新画布尺寸，处理窗口大小变化
+   */
+  resizeCanvas(width: number, height: number) {
+    if (this.m_app) {
+      this.m_width = width;
+      this.m_height = height;
+      this.m_app.renderer.resize(width, height);
+      
+      // 保存当前的平移比例，避免重置用户的平移操作
+      const currentX = this.m_world_container.x;
+      const currentY = this.m_world_container.y;
+      
+      // 调整world_container的位置，保持居中
+      const bgWidth = this.m_bg.img_sprite?.width || width;
+      const bgHeight = this.m_bg.img_sprite?.height || height;
+      
+      // 如果用户没有进行过平移操作（初始状态），则居中显示
+      if (currentX === 0 && currentY === 0) {
+        this.m_world_container.x = (width - bgWidth) / 2;
+        this.m_world_container.y = (height - bgHeight) / 2;
+      }
+    }
+  }
+
+  /**
+   * @description 重置缩放和位移，确保元素正确显示
+   */
+  resetTransform() {
+    // 重置缩放
+    this.m_app.stage.scale.x = 1;
+    this.m_app.stage.scale.y = 1;
+    
+    // 重置位移
+    this.m_world_container.x = 0;
+    this.m_world_container.y = 0;
   }
 
   //设置点击车辆时的回调函数
@@ -587,15 +645,18 @@ export class SimPIXI {
   }
 
   addVeh(id:number, in_cross?:boolean, cl_id?:number, lane_id?:number, cell_id?:number, x?:number, y?:number, speed?:number, router?:number[]) {
+    // 基于车辆ID确定颜色，确保同一辆车始终使用相同颜色
+    // 使用ID的哈希值对3取模，分配固定颜色
+    const colorIndex = id % 3;
     let car_color = 'car_red';
-    switch (this.getRandomInt(1, 3)) {
-      case 1:
+    switch (colorIndex) {
+      case 0:
         car_color = 'car_red';
         break;
-      case 2:
+      case 1:
         car_color = 'car_green';
         break;
-      case 3:
+      case 2:
         car_color = 'car_gray';
         break;
     }
@@ -787,14 +848,52 @@ export class SimPIXI {
           let color_hex = 0xFF0000;
           if (new_color == 'R') 
             color_hex = 0xFF0000;
-          else if (new_color = 'G')
+          else if (new_color === 'G')
             color_hex = 0x00FF00;
+          else if (new_color === 'Y')
+            color_hex = 0xFFFF00;
           phase_graphics.beginFill(color_hex);
           phase_graphics.drawCircle(x_, y_, 5);
           phase_graphics.endFill();
         }
       }
     }
+  }
+
+  /**
+   * @description 清除画布上的所有动态元素（车辆和信号灯相位）
+   */
+  clearCanvas() {
+    // 清除所有车辆
+    for (const veh of this.m_vehs) {
+      const sprite = veh.getVehSprite();
+      if (sprite) {
+        this.m_world_container.removeChild(sprite);
+      }
+    }
+    this.m_vehs = [];
+
+    // 清除所有相位
+    for (const cross of this.m_crosses) {
+      const phases = cross.getPhases();
+      for (const phase of phases) {
+        if (phase instanceof PhasePIXI) {
+          const graphics = phase.getPhaseGraphics();
+          if (graphics) {
+            this.m_world_container.removeChild(graphics);
+          }
+        }
+      }
+    }
+    this.m_crosses = [];
+  }
+
+  /**
+   * @description 获取指定ID的车辆
+   * @param id 车辆ID
+   */
+  getVeh(id: number) {
+    return this.m_vehs.find(veh => veh.getId() === id);
   }
 
 };

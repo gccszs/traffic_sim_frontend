@@ -24,6 +24,19 @@
       <el-icon><histogram /></el-icon>
       <template #title>历史数据</template>
     </el-menu-item>
+    <el-menu-item index="/simrecords">
+      <el-icon><document /></el-icon>
+      <template #title>仿真记录管理</template>
+    </el-menu-item>
+    <el-menu-item index="/mapmanager">
+      <el-icon><location /></el-icon>
+      <template #title>地图管理</template>
+    </el-menu-item>
+    <!-- 仅管理员显示用户管理 -->
+    <el-menu-item v-if="isAdmin" index="/usermanager">
+      <el-icon><UserFilled /></el-icon>
+      <template #title>用户管理</template>
+    </el-menu-item>
     <el-menu-item index="/setting">
       <el-icon><setting /></el-icon>
       <template #title>全局设置</template>
@@ -32,10 +45,16 @@
 </template>
 
 <script lang="ts" setup>
-import { onMounted, ref } from "vue";
-import { Histogram, Menu as IconMenu, Setting, Fold, Expand } from "@element-plus/icons-vue";
+import { onMounted, ref, computed } from "vue";
+import { Histogram, Menu as IconMenu, Setting, Fold, Expand, Location, UserFilled, Document } from "@element-plus/icons-vue";
+import { useAuthStore } from '@/stores/auth';
 
 const foldAside = ref(false);
+const authStore = useAuthStore();
+const userInfo = computed(() => authStore.userInfo);
+
+// 检查是否为管理员（roleId为1）
+const isAdmin = computed(() => userInfo.value?.roleId === 1);
 
 const handleOpen = (key: string, keyPath: string[]) => {
   console.log(key, keyPath);

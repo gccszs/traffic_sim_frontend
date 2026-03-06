@@ -45,7 +45,7 @@ export function GetMapJson() {
       if (response.data.res == "ERR_OK") {
         console.log(response.data)
         let map_json_obj = response.data.addition;
-        let map_json_data = map_json_obj.Data;
+        let map_json_data = map_json_obj.data;
         
         // 后端xml_to_json会把单节点转为例如{'Cross': {'Cross_Type': 0}}, 但前端需要的都是数组, 需要转为{'Cross': [{'Cross_Type':0}]}
         for (let key in map_json_data) {
@@ -103,7 +103,7 @@ export function GetMapJson() {
 }
 
 export function GetPluginInfo(plugin_name: string) {
-  return request.get("/get_plugin_info/?name=" + plugin_name)
+  return request.get("/simulation/get_plugin_info?name=" + plugin_name)
     .then(function (response) {
       if (response.data.res == "ERR_OK") {
         return response.data.addition;

@@ -39,4 +39,5 @@ export interface SimStructInfo {
   map_json: any; //路网json数据(xml转的json)
   map_pic: string; //路网base64数据
   fixed_od: FixedOD; //OD参数
+  mapId?: string; //地图ID
 }

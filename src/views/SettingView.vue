@@ -12,8 +12,8 @@
       </div>
     </el-col>
     <el-col :span="18">
-      <el-upload class="upload-demo" drag action="http://127.0.0.1:3822/upload_plugin" accept=".zip" multiple
-        :before-upload="onBeforeUploadPluginZip" :on-success="onUploadPluginZipSuc" :on-error="onUploadPluginZipErr">
+      <el-upload class="upload-demo" drag action="/upload_plugin" accept=".zip" multiple
+        :headers="uploadHeaders" :before-upload="onBeforeUploadPluginZip" :on-success="onUploadPluginZipSuc" :on-error="onUploadPluginZipErr">
         <el-icon class="el-icon--upload"><upload-filled /></el-icon>
         <div class="el-upload__text">
           Drop file here or <em>click to upload</em>
@@ -103,12 +103,22 @@ const plugin_infos = ref<PluginInfo[]>([
 
 const control2name_map:any = {"pv":"产生车辆", "lr": "Link运动", "cr": "Cross运动", "cu":"Controller运动", "cf":"跟驰模型", "cl":"换道模型"};    //control类型到实际名字的映射
 
+// 上传请求头配置
+const uploadHeaders = ref({});
+
 onMounted(() => {
+  // 从localStorage获取token并设置请求头
+  const token = localStorage.getItem('traffic_sim_token');
+  if (token) {
+    uploadHeaders.value = {
+      'Authorization': `Bearer ${token}`
+    };
+  }
+  
   // 请求拿到插件信息
   GetPluginInfo("all").then(pinfos => {
     plugin_infos.value = pinfos as PluginInfo[];
   });
-
 });
 
 function onBeforeUploadPluginZip(rawFile: UploadRawFile) {

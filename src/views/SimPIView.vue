@@ -170,22 +170,145 @@
       </div>
     </el-col>
   </el-row>
+  <!-- 仿真统计信息模块 -->
+  <el-row style="margin-top: 20px;">
+    <el-col :span="24">
+      <div id="simStatistics" class="statistics-container">
+        <!-- 顶部拥堵指数 -->
+        <div class="statistics-top">
+          <div class="top-title">
+            <div class="score">
+              <div class="point" style="background: rgb(137,189,27)" />
+              <div style="margin-left: 20px">{{ congestionIndex }}</div>
+            </div>
+            <div style="padding-left: 50px">{{ congestionName }}</div>
+          </div>
+          <div class="progress-bar">
+            <el-progress :show-text="false" :stroke-width="14" status="success" :percentage="congestionIndex * 10" />
+          </div>
+        </div>
+        
+        <!-- 分隔线 -->
+        <div class="line" style="background-color: #8C8D91" />
+        
+        <!-- 中部关键指标 -->
+        <div class="statistics-mid">
+          <div style="display: flex; flex-direction: row; justify-content: space-around; flex-wrap: wrap; width: 100%">
+            <div class="stat-item">
+              <div class="stat-score">
+                <div class="point" style="background: rgb(137,189,27)" />
+                <div style="margin-left: 20px">{{ queuingTimeData }} <span style="font-size: 12px;">s</span></div>
+              </div>
+              <div class="stat-text">{{ queuingTime }}</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-score">
+                <div class="point" style="background: rgb(194,85,210)" />
+                <div style="margin-left: 20px">{{ trafficInData }} <span style="font-size: 12px;">辆/分钟</span></div>
+              </div>
+              <div class="stat-text">{{ trafficIn }}</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-score">
+                <div class="point" style="background: rgb(232,104,82)" />
+                <div style="margin-left: 20px">{{ queuingLengthData }} <span style="font-size: 12px;">m</span></div>
+              </div>
+              <div class="stat-text">{{ queuingLength }}</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-score">
+                <div class="point" style="background: rgb(45,216,219)" />
+                <div style="margin-left: 20px">{{ trafficOutData }} <span style="font-size: 12px;">辆/分钟</span></div>
+              </div>
+              <div class="stat-text">{{ trafficOut }}</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-score">
+                <div class="point" style="background: rgb(255,51,100)" />
+                <div style="margin-left: 20px">{{ stoppingTimesData }} <span style="font-size: 12px;">次</span></div>
+              </div>
+              <div class="stat-text">{{ stoppingTimes }}</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-score">
+                <div class="point" style="background: rgb(0,99,93)" />
+                <div style="margin-left: 20px">{{ carSpeedData }} <span style="font-size: 12px;">km/h</span></div>
+              </div>
+              <div class="stat-text">{{ carSpeed }}</div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 分隔线 -->
+        <div class="line" style="background-color: #8C8D91" />
+        
+        <!-- 底部图表 -->
+        <div class="statistics-footer">
+          <div class="chart-footer">
+            <div id="chartVehicleSpeed" class="chart" />
+          </div>
+        </div>
+        <div class="statistics-footer">
+          <div class="chart-footer">
+            <div id="chartCongestion" class="chart" />
+          </div>
+        </div>
+        
+        <!-- 更多统计数据按钮 -->
+        <div class="more-button" @click="openMoreStats">更多统计数据>></div>
+        
+        <!-- 更多统计数据对话框 -->
+        <el-dialog 
+          id="statsDialog" 
+          title="统计数据" 
+          v-model="dialogVisible" 
+          top="20px" 
+          width="1400px" 
+          :center="true"
+          custom-class="stats-dialog"
+        >
+          <div class="dialog-content">
+            <el-card body-style="padding:0" class="dialog-card">
+              <div id="dialogChart1" class="dialog-chart" />
+            </el-card>
+            <el-card body-style="padding:0" class="dialog-card">
+              <div id="dialogChart2" class="dialog-chart" />
+            </el-card>
+            <el-card body-style="padding:0" class="dialog-card">
+              <div id="dialogChart3" class="dialog-chart" />
+            </el-card>
+            <el-card body-style="padding:0" class="dialog-card">
+              <div id="dialogChart4" class="dialog-chart" />
+            </el-card>
+            <el-card body-style="padding:0" class="dialog-card">
+              <div id="dialogChart5" class="dialog-chart" />
+            </el-card>
+            <el-card body-style="padding:0" class="dialog-card">
+              <div id="dialogChart6" class="dialog-chart" />
+            </el-card>
+          </div>
+        </el-dialog>
+      </div>
+    </el-col>
+  </el-row>
 </template>
 
 <script lang="ts" setup>
-import { onMounted, onUnmounted, ref } from "vue";
+import { onMounted, onUnmounted, ref, nextTick } from "vue";
 //import { io } from 'socket.io-client'; //使用WebSocket进行实时通信
 import { Check } from "@element-plus/icons-vue";
 import { ElNotification, type TabsPaneContext } from 'element-plus'
 import { ElLoading, ElMessage, ElMessageBox } from "element-plus";
 import { onBeforeRouteLeave } from 'vue-router';
 import { GetAuthIdOnce, DelAuthIdOnce, GetMapJson, GetPluginInfo } from '@/apis/SimPIApi'
-import { CreateSimEng, GetPluginCode } from '@/apis/SimEngApi'
+import { PrepareSimulation, CreateSimEng, GetPluginCode } from '@/apis/SimEngApi'
 import { TimeUtils } from "../mods/Utils";
 import { SimPIXI, Veh, Phase } from "@/mods/SimPIXI"
 // @ts-ignore
 import { generate_thumbnail, get_roadnetwork_xy } from '@/views/SimSteps/js/sim'
 import router from "@/router";
+// 导入ECharts
+import * as echarts from 'echarts';
 
 const sim_pixi_x = 1000, sim_pixi_y = 650;
 let sim_pixi = new SimPIXI(sim_pixi_x, sim_pixi_y); //仿真画布 使用PIXI
@@ -195,6 +318,9 @@ const sim_info = JSON.parse(sessionStorage.getItem('sim_info') as string);
 const control_views = JSON.parse(sessionStorage.getItem('control_views') as string);
 
 let loading_instance:any = null;
+
+// 添加taskId变量
+const taskId = ref("");
 
 const input_max_step = ref("");
 const each_step_delay = ref(0);
@@ -235,6 +361,551 @@ const deleteRow = (index: number) => {
   tableData.value.splice(index, 1);
 };
 
+// 仿真统计数据 - 匹配目标文件结构
+const congestionName = ref('拥堵指数：');
+const congestionIndex = ref(0);
+const queuingTime = ref('排队时间');
+const queuingTimeData = ref(0);
+const queuingLength = ref('排队长度');
+const queuingLengthData = ref(0);
+const trafficIn = ref('驶入车流');
+const trafficInData = ref(0);
+const trafficOut = ref('驶出车流');
+const trafficOutData = ref(0);
+const stoppingTimes = ref('停车次数');
+const stoppingTimesData = ref(0);
+const carSpeed = ref('车辆速度');
+const carSpeedData = ref(0);
+const dialogVisible = ref(false);
+
+// 图表数据数组
+const trafficInArray = ref<[number, number][]>([]);
+const trafficOutArray = ref<[number, number][]>([]);
+const carSpeedArray = ref<[number, number][]>([]);
+const congestionIndexArray = ref<[number, number][]>([]);
+const stoppingTimesArray = ref<[number, number][]>([]);
+const queuingLengthArray = ref<[number, number][]>([]);
+const queuingTimeArray = ref<[number, number][]>([]);
+
+// 辅助数据
+const maxStep = ref(0);
+const tempIndex = ref(0);
+const maxSimulationStep = ref(500); // 默认最大仿真步数
+
+// 图表实例引用
+let chartVehicleSpeed: echarts.ECharts | null = null;
+let chartCongestion: echarts.ECharts | null = null;
+let dialogCharts: echarts.ECharts[] = [];
+
+// 绘制底部图表
+function drawFooterCharts() {
+  // 初始化车辆速度图表
+  const speedChartDom = document.getElementById('chartVehicleSpeed');
+  if (speedChartDom) {
+    chartVehicleSpeed = echarts.init(speedChartDom);
+    chartVehicleSpeed.setOption({
+      backgroundColor: '#394056',
+      title: {
+        top: 10,
+        text: '车辆速度(km/h)',
+        textStyle: {
+          fontWeight: 'normal',
+          fontSize: 16,
+          color: '#F1F1F3'
+        },
+        left: '1%'
+      },
+      tooltip: {
+        trigger: 'axis',
+        axisPointer: {
+          lineStyle: {
+            color: '#57617B'
+          }
+        },
+        formatter: function(params: any) {
+          let res = '';
+          res += '步数：' + params[0].name;
+          for (let i = 0, l = params.length; i < l; i++) {
+            res += '<br/>' + params[i].marker + params[i].seriesName + ' : ' + params[i].data[1];
+          }
+          return res;
+        }
+      },
+      legend: {
+        top: 10,
+        icon: 'rect',
+        itemWidth: 14,
+        itemHeight: 5,
+        itemGap: 13,
+        data: ['车辆速度'],
+        selectedMode: 'single',
+        right: '4%',
+        textStyle: {
+          fontSize: 12,
+          color: '#F1F1F3'
+        }
+      },
+      grid: {
+        top: 50,
+        left: '2%',
+        right: '5%',
+        bottom: '2%',
+        containLabel: true
+      },
+      xAxis: [{
+        type: 'value',
+        boundaryGap: false,
+        axisLine: {
+          lineStyle: {
+            color: '#57617B'
+          }
+        },
+        max: maxSimulationStep.value
+      }],
+      yAxis: [{
+        type: 'value',
+        axisTick: {
+          show: false
+        },
+        axisLine: {
+          lineStyle: {
+            color: '#57617B'
+          }
+        },
+        axisLabel: {
+          margin: 10,
+          textStyle: {
+            fontSize: 14,
+            color: '#F1F1F3'
+          }
+        },
+        splitLine: {
+          lineStyle: {
+            color: '#57617B'
+          }
+        }
+      }],
+      series: [{
+        name: '车辆速度',
+        type: 'line',
+        smooth: true,
+        symbol: 'circle',
+        symbolSize: 5,
+        showSymbol: false,
+        lineStyle: {
+          normal: {
+            width: 1
+          }
+        },
+        areaStyle: {
+          normal: {
+            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{
+              offset: 0,
+              color: 'rgba(0, 136, 212, 0.3)'
+            }, {
+              offset: 0.8,
+              color: 'rgba(0, 136, 212, 0)'
+            }], false),
+            shadowColor: 'rgba(0, 0, 0, 0.1)',
+            shadowBlur: 10
+          }
+        },
+        itemStyle: {
+          normal: {
+            color: 'rgb(0,136,212)',
+            borderColor: 'rgba(0,136,212,0.2)',
+            borderWidth: 12
+          }
+        },
+        data: carSpeedArray.value
+      }]
+    });
+  }
+
+  // 初始化拥堵指数图表
+  const congestionChartDom = document.getElementById('chartCongestion');
+  if (congestionChartDom) {
+    chartCongestion = echarts.init(congestionChartDom);
+    chartCongestion.setOption({
+      backgroundColor: '#394056',
+      title: {
+        top: 10,
+        text: '拥堵指数',
+        textStyle: {
+          fontWeight: 'normal',
+          fontSize: 16,
+          color: '#F1F1F3'
+        },
+        left: '1%'
+      },
+      tooltip: {
+        trigger: 'axis',
+        axisPointer: {
+          lineStyle: {
+            color: '#57617B'
+          }
+        },
+        formatter: function(params: any) {
+          let res = '';
+          res += '步数：' + params[0].name;
+          for (let i = 0, l = params.length; i < l; i++) {
+            res += '<br/>' + params[i].marker + params[i].seriesName + ' : ' + params[i].data[1];
+          }
+          return res;
+        }
+      },
+      legend: {
+        top: 10,
+        icon: 'rect',
+        itemWidth: 14,
+        itemHeight: 5,
+        itemGap: 13,
+        data: ['拥堵指数'],
+        selectedMode: 'single',
+        right: '4%',
+        textStyle: {
+          fontSize: 12,
+          color: '#F1F1F3'
+        }
+      },
+      grid: {
+        top: 50,
+        left: '2%',
+        right: '5%',
+        bottom: '2%',
+        containLabel: true
+      },
+      xAxis: [{
+        type: 'value',
+        boundaryGap: false,
+        axisLine: {
+          lineStyle: {
+            color: '#57617B'
+          }
+        },
+        max: maxSimulationStep.value
+      }],
+      yAxis: [{
+        type: 'value',
+        axisTick: {
+          show: false
+        },
+        axisLine: {
+          lineStyle: {
+            color: '#57617B'
+          }
+        },
+        axisLabel: {
+          margin: 10,
+          textStyle: {
+            fontSize: 14,
+            color: '#F1F1F3'
+          }
+        },
+        splitLine: {
+          lineStyle: {
+            color: '#57617B'
+          }
+        }
+      }],
+      series: [{
+        name: '拥堵指数',
+        type: 'line',
+        smooth: true,
+        symbol: 'circle',
+        symbolSize: 5,
+        showSymbol: false,
+        lineStyle: {
+          normal: {
+            width: 1
+          }
+        },
+        areaStyle: {
+          normal: {
+            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{
+              offset: 0,
+              color: 'rgba(137, 189, 27, 0.3)'
+            }, {
+              offset: 0.8,
+              color: 'rgba(137, 189, 27, 0)'
+            }], false),
+            shadowColor: 'rgba(0, 0, 0, 0.1)',
+            shadowBlur: 10
+          }
+        },
+        itemStyle: {
+          normal: {
+            color: 'rgb(137,189,27)',
+            borderColor: 'rgba(137,189,2,0.27)',
+            borderWidth: 12
+          }
+        },
+        data: congestionIndexArray.value
+      }]
+    });
+  }
+}
+
+// 绘制对话框图表
+function drawDialogCharts() {
+  // 清空之前的图表实例
+  dialogCharts.forEach(chart => chart.dispose());
+  dialogCharts = [];
+
+  // 图表配置复用函数
+  const getChartOption = (title: string, seriesName: string, data: [number, number][], color: string) => ({
+    backgroundColor: '#394056',
+    title: {
+      top: 20,
+      text: title,
+      textStyle: {
+        fontWeight: 'normal',
+        fontSize: 16,
+        color: '#F1F1F3'
+      },
+      left: '1%'
+    },
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: {
+        lineStyle: {
+          color: '#57617B'
+        }
+      },
+      formatter: function(params: any) {
+        let res = '';
+        res += '步数：' + params[0].name;
+        for (let i = 0, l = params.length; i < l; i++) {
+          res += '<br/>' + params[i].marker + params[i].seriesName + ' : ' + params[i].data[1];
+        }
+        return res;
+      }
+    },
+    legend: {
+      top: 20,
+      icon: 'rect',
+      itemWidth: 14,
+      itemHeight: 5,
+      itemGap: 13,
+      data: [seriesName],
+      selectedMode: 'single',
+      right: '4%',
+      textStyle: {
+        fontSize: 12,
+        color: '#F1F1F3'
+      }
+    },
+    grid: {
+      top: 100,
+      left: '2%',
+      right: '5%',
+      bottom: '2%',
+      containLabel: true
+    },
+    xAxis: [{
+      type: 'value',
+      boundaryGap: false,
+      axisLine: {
+        lineStyle: {
+          color: '#57617B'
+        }
+      },
+      max: maxSimulationStep.value
+    }],
+    yAxis: [{
+      type: 'value',
+      axisTick: {
+        show: false
+      },
+      axisLine: {
+        lineStyle: {
+          color: '#57617B'
+        }
+      },
+      axisLabel: {
+        margin: 10,
+        textStyle: {
+          fontSize: 14,
+          color: '#F1F1F3'
+        }
+      },
+      splitLine: {
+        lineStyle: {
+          color: '#57617B'
+        }
+      }
+    }],
+    series: [{
+      name: seriesName,
+      type: 'line',
+      smooth: true,
+      symbol: 'circle',
+      symbolSize: 5,
+      showSymbol: false,
+      lineStyle: {
+        normal: {
+          width: 1
+        }
+      },
+      areaStyle: {
+        normal: {
+          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{
+            offset: 0,
+            color: `rgba(${color.split(',').join(', ')}, 0.3)`
+          }, {
+            offset: 0.8,
+            color: `rgba(${color.split(',').join(', ')}, 0)`
+          }], false),
+          shadowColor: 'rgba(0, 0, 0, 0.1)',
+          shadowBlur: 10
+        }
+      },
+      itemStyle: {
+        normal: {
+          color: `rgb(${color})`,
+          borderColor: `rgba(${color}, 0.2)`,
+          borderWidth: 12
+        }
+      },
+      data: data
+    }]
+  });
+
+  // 车流统计图表
+  const chart1 = echarts.init(document.getElementById('dialogChart1'));
+  chart1.setOption(getChartOption('车流统计', '驶入车流', trafficInArray.value, '137,189,27'));
+  dialogCharts.push(chart1);
+
+  // 车辆参数图表
+  const chart2 = echarts.init(document.getElementById('dialogChart2'));
+  chart2.setOption(getChartOption('车辆速度', '车辆速度', carSpeedArray.value, '0,136,212'));
+  dialogCharts.push(chart2);
+
+  // 排队信息图表
+  const chart3 = echarts.init(document.getElementById('dialogChart3'));
+  chart3.setOption(getChartOption('排队长度', '排队长度', queuingLengthArray.value, '219,50,51'));
+  dialogCharts.push(chart3);
+
+  // 拥堵指数图表
+  const chart4 = echarts.init(document.getElementById('dialogChart4'));
+  chart4.setOption(getChartOption('拥堵指数', '拥堵指数', congestionIndexArray.value, '137,189,27'));
+  dialogCharts.push(chart4);
+
+  // 停车信息图表
+  const chart5 = echarts.init(document.getElementById('dialogChart5'));
+  chart5.setOption(getChartOption('停车次数', '停车次数', stoppingTimesArray.value, '194,85,210'));
+  dialogCharts.push(chart5);
+
+  // 驶出车流图表
+  const chart6 = echarts.init(document.getElementById('dialogChart6'));
+  chart6.setOption(getChartOption('驶出车流', '驶出车流', trafficOutArray.value, '45,216,219'));
+  dialogCharts.push(chart6);
+}
+
+// 更新统计数据的函数
+function updateStatistics(data: any) {
+  console.log('=== 开始处理统计数据 ===');
+  console.log('完整infoStat数据:', JSON.stringify(data, null, 2));
+  
+  maxStep.value++;
+  tempIndex.value++;
+  
+  // 更新实时数据，添加异常值处理
+  trafficInData.value = Math.round(data.global?.cars_in || 0);
+  trafficOutData.value = Math.round(data.global?.cars_out || 0);
+  stoppingTimesData.value = Math.round(data.global?.stop_ave || 0);
+  
+  // 车辆速度处理
+  carSpeedData.value = Math.max(0, Math.floor((data.speed_ave || 0) * 100) / 100);
+  
+  // 拥堵指数处理：确保在0-1之间
+  console.log('=== 处理拥堵指数 ===');
+  console.log('data.global:', data.global);
+  
+  // 检查jam_index可能存在的位置
+  let jamIndex = 0;
+  let jamIndexSource = '未找到';
+  
+  // 尝试从不同位置获取jam_index
+  if (data.jam_index !== undefined) {
+    jamIndex = data.jam_index;
+    jamIndexSource = 'data.jam_index';
+  } else if (data.global?.jam_index !== undefined) {
+    jamIndex = data.global.jam_index;
+    jamIndexSource = 'data.global.jam_index';
+  } else if (data.infoStat?.jam_index !== undefined) {
+    jamIndex = data.infoStat.jam_index;
+    jamIndexSource = 'data.infoStat.jam_index';
+  } else if (data.global?.infoStat?.jam_index !== undefined) {
+    jamIndex = data.global.infoStat.jam_index;
+    jamIndexSource = 'data.global.infoStat.jam_index';
+  } else {
+    console.warn('未找到jam_index字段');
+  }
+  
+  console.log('原始jam_index值:', jamIndex, '类型:', typeof jamIndex, '来源:', jamIndexSource);
+  
+  // 确保jam_index是数字类型，处理可能的字符串类型数据
+  let parsedJamIndex = 0;
+  if (typeof jamIndex === 'string') {
+    parsedJamIndex = parseFloat(jamIndex);
+    console.log('字符串转换为数字:', parsedJamIndex);
+  } else if (typeof jamIndex === 'number') {
+    parsedJamIndex = jamIndex;
+    console.log('直接使用数字值:', parsedJamIndex);
+  } else {
+    // 处理其他类型，如对象、数组等
+    console.warn('jam_index不是有效的数字类型，类型为:', typeof jamIndex, '值为:', jamIndex);
+    parsedJamIndex = 0;
+  }
+  
+  // 检查解析后的值是否为有效数字
+  if (isNaN(parsedJamIndex)) {
+    console.warn('jam_index解析后为NaN，重置为0');
+    parsedJamIndex = 0;
+  }
+  
+  console.log('解析后jam_index:', parsedJamIndex);
+  
+  // 限制拥堵指数范围在0-1之间
+  const clampedJamIndex = Math.max(0, Math.min(1, parsedJamIndex));
+  console.log('范围限制后(0-1):', clampedJamIndex);
+  
+  // 四舍五入到两位小数
+  congestionIndex.value = Math.floor(clampedJamIndex * 100) / 100;
+  console.log('最终拥堵指数:', congestionIndex.value);
+  console.log('=== 拥堵指数处理完成 ===');
+  
+  // 排队时间和长度处理
+  queuingTimeData.value = Math.max(0, Math.floor((data.global?.queue_time_ave || 0) * 100) / 100);
+  queuingLengthData.value = Math.max(0, Math.floor((data.global?.queue_length_ave || 0) * 100) / 100);
+  
+  // 更新图表数据数组
+  trafficInArray.value.push([maxStep.value, trafficInData.value]);
+  trafficOutArray.value.push([maxStep.value, trafficOutData.value]);
+  carSpeedArray.value.push([maxStep.value, carSpeedData.value]);
+  congestionIndexArray.value.push([maxStep.value, congestionIndex.value]);
+  stoppingTimesArray.value.push([maxStep.value, stoppingTimesData.value]);
+  queuingLengthArray.value.push([maxStep.value, queuingLengthData.value]);
+  queuingTimeArray.value.push([maxStep.value, queuingTimeData.value]);
+  
+  // 更新底部图表
+  if (chartVehicleSpeed) {
+    chartVehicleSpeed.setOption({ series: [{ data: carSpeedArray.value }] });
+  }
+  if (chartCongestion) {
+    chartCongestion.setOption({ series: [{ data: congestionIndexArray.value }] });
+  }
+}
+
+// 打开更多统计数据对话框
+function openMoreStats() {
+  dialogVisible.value = true;
+  nextTick(() => {
+    drawDialogCharts();
+  });
+}
+
 const handleClickPluginTab = (pane: TabsPaneContext, ev: Event):void => {
   let cur_info = null;
   for (let info of plugin_code_tabs.value) {
@@ -245,7 +916,7 @@ const handleClickPluginTab = (pane: TabsPaneContext, ev: Event):void => {
   }
   if (cur_info !== null) {
     const plugin_name = cur_info.name;
-    GetPluginCode(plugin_name).then((code_text) => {
+    GetPluginCode(plugin_name).then((code_text: string) => {
       plugin_code.value = code_text;
     });
   }
@@ -298,24 +969,48 @@ function OnSliderChangeDelay(value: number | number[]): boolean {
   let timestamp = Date.now();
   delay_msg.time = timestamp;
   delay_msg.data.Delay = value as number;
-  ws.send(JSON.stringify(delay_msg));
+  ws.value?.send(JSON.stringify(delay_msg));
   return true;
 }
 
 // 使用标准 WebSocket API DEV环境为localhost 生产环境为ip
-const ws = new WebSocket("ws://127.0.0.1:3822/ws/frontend");
+// 从localStorage获取userId
+let userId = '';
+try {
+  const userInfoStr = localStorage.getItem('traffic_sim_user_info');
+  if (userInfoStr) {
+    const userInfo = JSON.parse(userInfoStr);
+    userId = userInfo.id || '';
+  }
+} catch (error) {
+  console.error('Failed to parse user info:', error);
+}
 
-// 监听连接建立
-ws.onopen = () => {
-  console.log("WebSocket connected");
-  let hello_msg = {type: "backend", ope:"hello", time: 0};
-  let timestamp = Date.now();
-  hello_msg.time = timestamp;
-  ws.send(JSON.stringify(hello_msg));
-};
+// 将ws改为ref类型，以便在组件的其他部分使用
+const ws = ref<WebSocket | null>(null);
 
-// 监听消息接收
-ws.onmessage = (event) => {
+// 初始化WebSocket连接的函数
+function initWebSocket() {
+  if (!taskId.value) {
+    console.error("taskId is empty, cannot establish WebSocket connection");
+    return;
+  }
+  
+  // 构建WebSocket URL，使用taskId
+  const wsUrl = `ws://192.168.1.212:3822/ws/frontend/${taskId.value}`;
+  ws.value = new WebSocket(wsUrl);
+  
+  // 监听连接建立
+  ws.value.onopen = () => {
+    console.log("WebSocket connected");
+    let hello_msg = {type: "backend", ope:"hello", time: 0};
+    let timestamp = Date.now();
+    hello_msg.time = timestamp;
+    ws.value?.send(JSON.stringify(hello_msg));
+  };
+  
+  // 监听消息接收
+  ws.value.onmessage = (event) => {
   //console.log("Message from server:", event.data);
   let msg_obj = JSON.parse(event.data);
   if (msg_obj.type == 'frontend') { //只处理发给前端的消息
@@ -336,7 +1031,7 @@ ws.onmessage = (event) => {
           set_plugin_msg.time = timestamp;
           set_plugin_msg.data.ConType = p_type;
           set_plugin_msg.data.Name = p_name;
-          ws.send(JSON.stringify(set_plugin_msg));
+          ws.value?.send(JSON.stringify(set_plugin_msg));
         }
       }
 
@@ -458,8 +1153,20 @@ ws.onmessage = (event) => {
         }
 
       } else if (msg_obj_data.pos == 'sim_one_step') {
+        console.log('=== 接收到sim_one_step消息 ===');
+        console.log('sim_one_step完整数据:', JSON.stringify(msg_obj_data, null, 2));
+        
         const next_step = msg_obj_data.next_step + 1;
         cur_step_num.value = next_step;
+        
+        // 处理sim_one_step中的统计数据
+        if (msg_obj_data.infoStat) {
+          console.log('infoStat存在，调用updateStatistics');
+          updateStatistics(msg_obj_data.infoStat);
+        } else {
+          console.warn('infoStat不存在，跳过统计数据更新');
+          console.log('msg_obj_data:', JSON.stringify(msg_obj_data, null, 2));
+        }
       }
       
     }
@@ -469,13 +1176,14 @@ ws.onmessage = (event) => {
 };
 
 // 监听连接关闭
-ws.onclose = () => {
-  console.log("WebSocket connection closed");
-};
-
-// 监听错误
-ws.onerror = (error) => {
-  console.error("WebSocket error:", error);
+  ws.value.onclose = () => {
+    console.log("WebSocket connection closed");
+  };
+  
+  // 监听错误
+  ws.value.onerror = (error) => {
+    console.error("WebSocket error:", error);
+  };
 };
 
 function OnClickStart() {
@@ -486,21 +1194,21 @@ function OnClickStart() {
   let start_msg = { type:"eng", ope:"start", time:0};
   let timestamp = Date.now();
   start_msg.time = timestamp;
-  ws.send(JSON.stringify(start_msg));
+  ws.value?.send(JSON.stringify(start_msg));
 }
 
 function OnClickPause() {
   let pause_msg = { type:"eng", ope:"pause", time:0};
   let timestamp = Date.now();
   pause_msg.time = timestamp;
-  ws.send(JSON.stringify(pause_msg));
+  ws.value?.send(JSON.stringify(pause_msg));
 }
 
 function OnClickStop() {
   let stop_msg = { type:"eng", ope:"stop", time:0};
   let timestamp = Date.now();
   stop_msg.time = timestamp;
-  ws.send(JSON.stringify(stop_msg));
+  ws.value?.send(JSON.stringify(stop_msg));
 }
 
 function OnClickSetMaxStep(step_num:number) {
@@ -508,7 +1216,7 @@ function OnClickSetMaxStep(step_num:number) {
   let timestamp = Date.now();
   setmaxstep_msg.time = timestamp;
   setmaxstep_msg.data.Step = step_num;
-  ws.send(JSON.stringify(setmaxstep_msg));
+  ws.value?.send(JSON.stringify(setmaxstep_msg));
 }
 
 onMounted(() => {
@@ -585,6 +1293,12 @@ onMounted(() => {
     cur_obj_attr.value.y = phase.getY() as number;
   });
   
+  // 重置统计数据，防止历史数据累积
+  resetStatisticsData();
+  
+  // 初始化统计图表
+  drawFooterCharts();
+  
   //仿真和插件信息
   console.log(sim_info)
   console.log(control_views)
@@ -601,17 +1315,68 @@ onMounted(() => {
   plugin_code_tabs.value = plugin_code_tab_names;
   if (plugin_code_tab_names.length > 0) cur_plugin_code_tab.value = plugin_code_tab_names[0].id;
   
-  CreateSimEng(sim_info, control_views).then(rep => {
-    //console.log(rep);
-    AddLogPanelMsg("请求创建仿真引擎完成");
+  // 获取taskId
+  PrepareSimulation().then(rep => {
+    if (rep && rep.res === "ERR_OK") {
+      taskId.value = rep.data;
+      AddLogPanelMsg("获取taskId成功: " + taskId.value);
+      
+      // 初始化WebSocket连接
+      initWebSocket();
+      
+      // 调用仿真引擎启动接口
+      CreateSimEng(taskId.value, sim_info, control_views).then(rep => {
+        //console.log(rep);
+        AddLogPanelMsg("请求创建仿真引擎完成");
+      });
+    } else {
+      AddLogPanelMsg("获取taskId失败");
+      console.error("获取taskId失败:", rep);
+    }
   });
 
 });
 
+// 重置统计数据
+function resetStatisticsData() {
+  // 重置关键指标
+  congestionIndex.value = 0;
+  queuingTimeData.value = 0;
+  queuingLengthData.value = 0;
+  trafficInData.value = 0;
+  trafficOutData.value = 0;
+  stoppingTimesData.value = 0;
+  carSpeedData.value = 0;
+  
+  // 重置图表数据数组
+  trafficInArray.value = [];
+  trafficOutArray.value = [];
+  carSpeedArray.value = [];
+  congestionIndexArray.value = [];
+  stoppingTimesArray.value = [];
+  queuingLengthArray.value = [];
+  queuingTimeArray.value = [];
+  
+  // 重置辅助数据
+  maxStep.value = 0;
+  tempIndex.value = 0;
+  
+  // 重置当前步数
+  cur_step_num.value = 1;
+}
+
 // 在组件卸载时断开连接
 onUnmounted(() => {
   OnClickStop();//触发一次关闭引擎的操作
-  ws.close();
+  ws.value?.close();
+  // 销毁图表实例
+  if (chartVehicleSpeed) {
+    chartVehicleSpeed.dispose();
+  }
+  if (chartCongestion) {
+    chartCongestion.dispose();
+  }
+  dialogCharts.forEach(chart => chart.dispose());
 });
 
 // 拦截路由变化
@@ -623,8 +1388,8 @@ onBeforeRouteLeave((to, from, next) => {
     let stop_msg = { type:"eng", ope:"stop", time:0};
     let timestamp = Date.now();
     stop_msg.time = timestamp;
-    ws.send(JSON.stringify(stop_msg));
-    ws.close();
+    ws.value?.send(JSON.stringify(stop_msg));
+    ws.value?.close();
     next();  // 允许导航
   } else {
     next(false);  // 阻止导航
@@ -645,5 +1410,251 @@ onBeforeRouteLeave((to, from, next) => {
 }
 :deep(.step-content) {
   background: #b0d5df;
+}
+
+/* 统计信息模块样式 */
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+:deep(.el-statistic__title) {
+  font-size: 14px;
+  color: var(--el-text-color-secondary);
+  margin-bottom: 8px;
+}
+
+:deep(.el-statistic__value) {
+  font-size: 28px;
+  font-weight: bold;
+  color: var(--el-color-primary);
+}
+
+:deep(.el-statistic__suffix) {
+  font-size: 18px;
+  color: var(--el-text-color-secondary);
+}
+
+:deep(.el-card__header) {
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--el-border-color);
+}
+
+:deep(.el-card__body) {
+  padding: 20px;
+}
+
+/* 响应式设计调整 */
+@media (max-width: 768px) {
+  :deep(.el-statistic__title) {
+    font-size: 12px;
+  }
+  
+  :deep(.el-statistic__value) {
+    font-size: 20px;
+  }
+  
+  :deep(.el-statistic__suffix) {
+    font-size: 14px;
+  }
+  
+  :deep(.el-card__body) {
+    padding: 12px;
+  }
+}
+
+/* 新的统计信息模块样式 - 深色主题 */
+.statistics-container {
+  width: 100%;
+  height: auto;
+  background-color: #394056;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.statistics-top {
+  width: 100%;
+  padding: 20px;
+}
+
+.top-title {
+  width: 100%;
+  color: #b7b7b9;
+  font-size: 14px;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 80px;
+  padding-top: 20px;
+  padding-bottom: 20px;
+  padding-left: 20px;
+  padding-right: 20px;
+}
+
+.statistics-mid {
+  width: 100%;
+  padding: 20px 0;
+}
+
+.statistics-footer {
+  width: 100%;
+  height: 200px;
+}
+
+.chart-footer {
+  width: 100%;
+  height: 160px;
+}
+
+.chart {
+  width: 100%;
+  height: 200px;
+  margin-top: 0px;
+}
+
+.line {
+  margin-left: 10px;
+  margin-right: 10px;
+  width: calc(100% - 20px);
+  height: 1px;
+}
+
+.stat-item {
+  width: 150px;
+  margin-bottom: 20px;
+}
+
+.stat-score {
+  display: flex;
+  align-items: center;
+  flex-direction: row;
+  font-size: 18px;
+  color: #ffffff;
+  padding-left: 10px;
+  padding-top: 10px;
+  padding-bottom: 20px;
+}
+
+.stat-text {
+  padding-left: 40px;
+  color: #b7b7b9;
+  font-size: 14px;
+}
+
+.point {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  -moz-border-radius: 50%;
+  -webkit-border-radius: 50%;
+}
+
+.score {
+  display: flex;
+  align-items: center;
+  flex-direction: row;
+  font-size: 40px;
+  color: #ffffff;
+  padding-left: 20px;
+  padding-top: 20px;
+}
+
+.more-button {
+  margin: 0 auto;
+  width: 200px;
+  text-align: center;
+  font-size: 14px;
+  color: #ffffff;
+  height: 30px;
+  padding: 10px 0;
+  cursor: pointer;
+}
+
+.more-button:hover {
+  text-decoration: underline;
+}
+
+/* 对话框样式 */
+:deep(.stats-dialog .el-dialog__header) {
+  background-color: #394056;
+  border-bottom: 1px solid #57617B;
+}
+
+:deep(.stats-dialog .el-dialog__title) {
+  color: #ffffff;
+}
+
+:deep(.stats-dialog .el-dialog__body) {
+  background-color: #394056;
+  padding: 20px;
+}
+
+:deep(.stats-dialog .el-dialog__footer) {
+  background-color: #394056;
+  border-top: 1px solid #57617B;
+}
+
+.dialog-content {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+  flex-wrap: wrap;
+  width: 100%;
+  background-color: #394056;
+}
+
+.dialog-card {
+  width: 400px;
+  margin-top: 20px;
+  background-color: #394056;
+  border: 1px solid #57617B;
+}
+
+.dialog-chart {
+  width: 400px;
+  height: 400px;
+}
+
+/* 进度条样式调整 */
+:deep(.el-progress-bar__outer) {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+:deep(.el-progress-bar__inner) {
+  background-color: rgb(137, 189, 27);
+}
+
+/* 调整element plus组件样式 */
+:deep(.el-card) {
+  background-color: transparent;
+  border: none;
+}
+
+:deep(.el-card__body) {
+  background-color: transparent;
+  padding: 0;
+}
+
+/* 响应式设计调整 */
+@media (max-width: 768px) {
+  .stat-item {
+    width: 100%;
+    margin-bottom: 15px;
+  }
+  
+  .chart {
+    height: 150px;
+  }
+  
+  .dialog-card {
+    width: 100%;
+  }
+  
+  .dialog-chart {
+    width: 100%;
+    height: 300px;
+  }
 }
 </style>

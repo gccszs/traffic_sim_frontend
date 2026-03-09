@@ -27,7 +27,7 @@
       <el-row :gutter="20">
         <el-col :xs="24" :sm="12" :md="8" :lg="6" v-for="map in maps" :key="map.id">
           <el-card :body-style="{ padding: '0px' }" class="map-item">
-            <img :src="map.imageUrl || '/favicon.ico'" class="map-image" alt="地图缩略图" />
+            <!-- <img :src="map.imageUrl || '/favicon.ico'" class="map-image" alt="地图缩略图" /> -->
             <div class="map-info">
               <h3 class="map-name">{{ map.name }}</h3>
               <p class="map-description">{{ map.description }}</p>
@@ -178,7 +178,7 @@ const getMaps = () => {
   };
   getMapsApi(params).then(response => {
     if (response.success && response.data) {
-      maps.value = response.data.maps;
+      maps.value = response.data.records;
       total.value = response.data.total;
     } else {
       ElMessage.error(response.message || '获取地图列表失败');

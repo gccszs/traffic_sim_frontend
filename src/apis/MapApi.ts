@@ -32,7 +32,7 @@ interface MapResponse {
 }
 
 export function getMaps(params: GetMapsParams = {}): Promise<GetMapsResponse> {
-  return request.get('/maps', { params })
+  return request.get('/maps/mymaps', { params })
     .then((response) => {
       return response.data;
     })

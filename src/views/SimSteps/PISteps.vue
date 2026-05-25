@@ -506,6 +506,182 @@
               </div>
             </el-card>
           </el-col>
+
+          <!-- 静态卡片1: 跟驰模型 -->
+          <el-col
+            :span="6"
+            style="
+              flex: 1 1 25%;
+              max-width: 25%;
+              min-width: 250px;
+              margin-bottom: 20px;
+            "
+          >
+            <el-card>
+              <template #header>
+                <div class="card-header">
+                  <span>跟驰模型</span>
+                  <el-switch
+                    v-model="staticCard1.use_plugin"
+                    inline-prompt
+                    style="
+                      --el-switch-on-color: #13ce66;
+                      --el-switch-off-color: #ff4949;
+                    "
+                    active-text="使用插件接管"
+                    inactive-text="不使用插件接管"
+                  />
+                </div>
+              </template>
+              <div v-if="staticCard1.use_plugin" style="margin-top: 12px">
+                <el-upload
+                  :auto-upload="false"
+                  :limit="1"
+                  :on-change="(file: any) => { staticCard1.fileName = file.name; staticCard1.file = file.raw; }"
+                  :on-exceed="() => ElMessage.warning('只能上传一个文件')"
+                  accept=".pt,.pth,.onnx,.pkl,.py"
+                  drag
+                >
+                  <el-icon style="font-size: 32px; color: #909399;"><UploadFilled /></el-icon>
+                  <div style="font-size: 13px; color: #606266;">拖拽或<em style="color:#409eff">点击上传</em></div>
+                </el-upload>
+                <div style="font-size: 11px; color: #909399; margin-top: 4px;">支持格式: .pt, .pth, .onnx, .pkl, .py</div>
+                <div v-if="staticCard1.fileName" style="margin-top: 6px; color: #67c23a; font-size: 12px;">已选择: {{ staticCard1.fileName }}</div>
+              </div>
+            </el-card>
+          </el-col>
+
+          <!-- 静态卡片2: 换道模型 -->
+          <el-col
+            :span="6"
+            style="
+              flex: 1 1 25%;
+              max-width: 25%;
+              min-width: 250px;
+              margin-bottom: 20px;
+            "
+          >
+            <el-card>
+              <template #header>
+                <div class="card-header">
+                  <span>换道模型</span>
+                  <el-switch
+                    v-model="staticCard2.use_plugin"
+                    inline-prompt
+                    style="
+                      --el-switch-on-color: #13ce66;
+                      --el-switch-off-color: #ff4949;
+                    "
+                    active-text="使用插件接管"
+                    inactive-text="不使用插件接管"
+                  />
+                </div>
+              </template>
+              <div v-if="staticCard2.use_plugin" style="margin-top: 12px">
+                <el-upload
+                  :auto-upload="false"
+                  :limit="1"
+                  :on-change="(file: any) => { staticCard2.fileName = file.name; staticCard2.file = file.raw; }"
+                  :on-exceed="() => ElMessage.warning('只能上传一个文件')"
+                  accept=".pt,.pth,.onnx,.pkl,.py"
+                  drag
+                >
+                  <el-icon style="font-size: 32px; color: #909399;"><UploadFilled /></el-icon>
+                  <div style="font-size: 13px; color: #606266;">拖拽或<em style="color:#409eff">点击上传</em></div>
+                </el-upload>
+                <div style="font-size: 11px; color: #909399; margin-top: 4px;">支持格式: .pt, .pth, .onnx, .pkl, .py</div>
+                <div v-if="staticCard2.fileName" style="margin-top: 6px; color: #67c23a; font-size: 12px;">已选择: {{ staticCard2.fileName }}</div>
+              </div>
+            </el-card>
+          </el-col>
+
+          <!-- 静态卡片3: 信号灯控制 -->
+          <el-col
+            :span="6"
+            style="
+              flex: 1 1 25%;
+              max-width: 25%;
+              min-width: 250px;
+              margin-bottom: 20px;
+            "
+          >
+            <el-card>
+              <template #header>
+                <div class="card-header">
+                  <span>车辆生成</span>
+                  <el-switch
+                    v-model="staticCard3.use_plugin"
+                    inline-prompt
+                    style="
+                      --el-switch-on-color: #13ce66;
+                      --el-switch-off-color: #ff4949;
+                    "
+                    active-text="使用插件接管"
+                    inactive-text="不使用插件接管"
+                  />
+                </div>
+              </template>
+              <div v-if="staticCard3.use_plugin" style="margin-top: 12px">
+                <el-upload
+                  :auto-upload="false"
+                  :limit="1"
+                  :on-change="(file: any) => { staticCard3.fileName = file.name; staticCard3.file = file.raw; }"
+                  :on-exceed="() => ElMessage.warning('只能上传一个文件')"
+                  accept=".xml"
+                  drag
+                >
+                  <el-icon style="font-size: 32px; color: #909399;"><UploadFilled /></el-icon>
+                  <div style="font-size: 13px; color: #606266;">拖拽或<em style="color:#409eff">点击上传</em></div>
+                </el-upload>
+                <div style="font-size: 11px; color: #909399; margin-top: 4px;">支持格式: .xml</div>
+                <div v-if="staticCard3.fileName" style="margin-top: 6px; color: #67c23a; font-size: 12px;">已选择: {{ staticCard3.fileName }}</div>
+              </div>
+            </el-card>
+          </el-col>
+
+          <!-- 静态卡片4: 路径规划 -->
+          <el-col
+            :span="6"
+            style="
+              flex: 1 1 25%;
+              max-width: 25%;
+              min-width: 250px;
+              margin-bottom: 20px;
+            "
+          >
+            <el-card>
+              <template #header>
+                <div class="card-header">
+                  <span>路径规划</span>
+                  <el-switch
+                    v-model="staticCard4.use_plugin"
+                    inline-prompt
+                    style="
+                      --el-switch-on-color: #13ce66;
+                      --el-switch-off-color: #ff4949;
+                    "
+                    active-text="使用插件接管"
+                    inactive-text="不使用插件接管"
+                  />
+                </div>
+              </template>
+              <div v-if="staticCard4.use_plugin" style="margin-top: 12px">
+                <el-upload
+                  :auto-upload="false"
+                  :limit="1"
+                  :on-change="(file: any) => { staticCard4.fileName = file.name; staticCard4.file = file.raw; }"
+                  :on-exceed="() => ElMessage.warning('只能上传一个文件')"
+                  accept=".pt,.pth,.onnx,.pkl,.py"
+                  drag
+                >
+                  <el-icon style="font-size: 32px; color: #909399;"><UploadFilled /></el-icon>
+                  <div style="font-size: 13px; color: #606266;">拖拽或<em style="color:#409eff">点击上传</em></div>
+                </el-upload>
+                <div style="font-size: 11px; color: #909399; margin-top: 4px;">支持格式: .pt, .pth, .onnx, .pkl, .py</div>
+                <div v-if="staticCard4.fileName" style="margin-top: 6px; color: #67c23a; font-size: 12px;">已选择: {{ staticCard4.fileName }}</div>
+              </div>
+            </el-card>
+          </el-col>
         </el-row>
       </el-form-item>
     </el-form>
@@ -691,6 +867,8 @@ interface ControlView {
   plugin_names: string[]; //和上一个字段的插件id一一对应
   active_plugin: string; //当前应用了哪个插件
   use_plugin: boolean; //使用插件接管
+  fileName?: string; //上传文件名
+  file?: File | null; //上传文件对象
 }
 
 // 从接管行为的视图, 例如'产生车辆'有哪些插件
@@ -711,6 +889,44 @@ const control2name_map: any = {
   cf: "跟驰模型",
   cl: "换道模型",
 }; //control类型到实际名字的映射
+
+// 4个静态卡片数据
+const staticCard1 = ref<ControlView>({
+  control_type: 'cf',
+  plugins: ['pa_eidm', 'eidm', 'idm'],
+  plugin_names: ['PA-EIDM', 'EIDM', 'IDM'],
+  active_plugin: 'pa_eidm',
+  use_plugin: false,
+  fileName: '',
+  file: null,
+});
+const staticCard2 = ref<ControlView>({
+  control_type: 'cl',
+  plugins: ['stfpm', 'mobil'],
+  plugin_names: ['STFPM', 'MOBIL'],
+  active_plugin: 'stfpm',
+  use_plugin: false,
+  fileName: '',
+  file: null,
+});
+const staticCard3 = ref<ControlView>({
+  control_type: 'cu',
+  plugins: ['fixed_time', 'adaptive'],
+  plugin_names: ['固定配时', '自适应控制'],
+  active_plugin: 'fixed_time',
+  use_plugin: false,
+  fileName: '',
+  file: null,
+});
+const staticCard4 = ref<ControlView>({
+  control_type: 'route',
+  plugins: ['dijkstra', 'a_star'],
+  plugin_names: ['Dijkstra', 'A*算法'],
+  active_plugin: 'dijkstra',
+  use_plugin: false,
+  fileName: '',
+  file: null,
+});
 
 let plugin_infos: PluginInfo[] = [
   {

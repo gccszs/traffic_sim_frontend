@@ -12,14 +12,18 @@
       <el-icon v-else><Fold /></el-icon>
       <template #title>折叠菜单</template>
     </el-menu-item>
-    <el-sub-menu index="2">
+    <!-- <el-sub-menu index="2">
       <template #title>
         <el-icon><icon-menu /></el-icon>
         <span>创建仿真</span>
       </template>
       <el-menu-item index="2-1">普通仿真</el-menu-item>
       <el-menu-item index="/simpisetup">交互仿真</el-menu-item>
-    </el-sub-menu>
+    </el-sub-menu> -->
+    <el-menu-item index="/simpisetup">
+      <el-icon><icon-menu /></el-icon>
+      <template #title>创建仿真</template>
+    </el-menu-item>
     <el-menu-item index="/">
       <el-icon><histogram /></el-icon>
       <template #title>历史数据</template>

@@ -1,7 +1,7 @@
 import request from '@/mods/Axios';
 
 interface MapItem {
-  id: string;
+  mapId: string;
   name: string;
   description: string;
   imageUrl: string;

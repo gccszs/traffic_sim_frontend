@@ -67,19 +67,93 @@
       </div>
     </el-col>
     <el-col :span="6">
-      <div>
-        <!--此div为日志区域-->
-        <el-table :data="tableData" style="width: 100%; min-height: 380px; overflow: auto;" max-height="450">
-          <el-table-column fixed prop="date" label="时间" min-width="60" />
-          <el-table-column prop="event" label="事件" min-width="120" />
-          <el-table-column fixed="right" label="操作" minwidth="30">
-            <template #default="scope">
-              <el-button link type="primary" size="small" @click.prevent="deleteRow(scope.$index)">
-                删除
-              </el-button>
-            </template>
-          </el-table-column>
-        </el-table>
+      <div style="height: 450px; overflow-y: auto; padding: 8px;">
+        <!-- 行为模型参数在线调整控制台 -->
+        <div style="margin-bottom: 8px; font-weight: bold; font-size: 14px; color: #409eff;">
+          行为模型参数调整
+        </div>
+
+        <!-- PA-EIDM 跟驰模型参数 -->
+        <el-collapse v-model="paramPanelActive" accordion>
+          <el-collapse-item title="跟驰模型 (PA-EIDM) 固定参数" name="cf_fixed">
+            <div class="param-row">
+              <span class="param-label">舒适减速度 b (m/s²)</span>
+              <el-slider v-model="cfParams.b" :min="0.5" :max="4.0" :step="0.1" :show-tooltip="true" style="flex:1; margin: 0 8px;" />
+              <el-input-number v-model="cfParams.b" :min="0.5" :max="4.0" :step="0.1" :precision="1" size="small" style="width: 100px;" />
+            </div>
+            <div class="param-row">
+              <span class="param-label">最小安全间距 s₀ (m)</span>
+              <el-slider v-model="cfParams.s0" :min="0.5" :max="5.0" :step="0.1" :show-tooltip="true" style="flex:1; margin: 0 8px;" />
+              <el-input-number v-model="cfParams.s0" :min="0.5" :max="5.0" :step="0.1" :precision="1" size="small" style="width: 100px;" />
+            </div>
+            <div class="param-row">
+              <span class="param-label">加速度指数 δ</span>
+              <el-slider v-model="cfParams.delta" :min="1" :max="8" :step="1" :show-tooltip="true" style="flex:1; margin: 0 8px;" />
+              <el-input-number v-model="cfParams.delta" :min="1" :max="8" :step="1" size="small" style="width: 100px;" />
+            </div>
+            <div class="param-row">
+              <span class="param-label">感知时延 τ (s)</span>
+              <el-slider v-model="cfParams.tau" :min="0.0" :max="1.0" :step="0.05" :show-tooltip="true" style="flex:1; margin: 0 8px;" />
+              <el-input-number v-model="cfParams.tau" :min="0.0" :max="1.0" :step="0.05" :precision="2" size="small" style="width: 100px;" />
+            </div>
+          </el-collapse-item>
+
+          <el-collapse-item title="跟驰模型 (PA-EIDM) LPN约束边界" name="cf_lpn">
+            <div class="param-row">
+              <span class="param-label">期望时距下界 T_min (s)</span>
+              <el-slider v-model="cfParams.T_min" :min="0.1" :max="2.0" :step="0.1" :show-tooltip="true" style="flex:1; margin: 0 8px;" />
+              <el-input-number v-model="cfParams.T_min" :min="0.1" :max="2.0" :step="0.1" :precision="1" size="small" style="width: 100px;" />
+            </div>
+            <div class="param-row">
+              <span class="param-label">期望时距上界 T_max (s)</span>
+              <el-slider v-model="cfParams.T_max" :min="1.0" :max="5.0" :step="0.1" :show-tooltip="true" style="flex:1; margin: 0 8px;" />
+              <el-input-number v-model="cfParams.T_max" :min="1.0" :max="5.0" :step="0.1" :precision="1" size="small" style="width: 100px;" />
+            </div>
+            <div class="param-row">
+              <span class="param-label">期望速度下界 v₀_min (m/s)</span>
+              <el-slider v-model="cfParams.v0_min" :min="1.0" :max="15.0" :step="0.5" :show-tooltip="true" style="flex:1; margin: 0 8px;" />
+              <el-input-number v-model="cfParams.v0_min" :min="1.0" :max="15.0" :step="0.5" :precision="1" size="small" style="width: 100px;" />
+            </div>
+            <div class="param-row">
+              <span class="param-label">期望速度上界 v₀_max (m/s)</span>
+              <el-slider v-model="cfParams.v0_max" :min="15.0" :max="60.0" :step="0.5" :show-tooltip="true" style="flex:1; margin: 0 8px;" />
+              <el-input-number v-model="cfParams.v0_max" :min="15.0" :max="60.0" :step="0.5" :precision="1" size="small" style="width: 100px;" />
+            </div>
+            <div class="param-row">
+              <span class="param-label">最大加速度下界 a_min (m/s²)</span>
+              <el-slider v-model="cfParams.a_min" :min="0.1" :max="2.0" :step="0.1" :show-tooltip="true" style="flex:1; margin: 0 8px;" />
+              <el-input-number v-model="cfParams.a_min" :min="0.1" :max="2.0" :step="0.1" :precision="1" size="small" style="width: 100px;" />
+            </div>
+            <div class="param-row">
+              <span class="param-label">最大加速度上界 a_ub (m/s²)</span>
+              <el-slider v-model="cfParams.a_ub" :min="1.0" :max="5.0" :step="0.1" :show-tooltip="true" style="flex:1; margin: 0 8px;" />
+              <el-input-number v-model="cfParams.a_ub" :min="1.0" :max="5.0" :step="0.1" :precision="1" size="small" style="width: 100px;" />
+            </div>
+          </el-collapse-item>
+
+          <el-collapse-item title="换道模型 (STFPM) 参数" name="lc_params">
+            <div class="param-row">
+              <span class="param-label">安全距离阈值 d_safe (m)</span>
+              <el-slider v-model="lcParams.d_safe_th" :min="1.0" :max="20.0" :step="0.5" :show-tooltip="true" style="flex:1; margin: 0 8px;" />
+              <el-input-number v-model="lcParams.d_safe_th" :min="1.0" :max="20.0" :step="0.5" :precision="1" size="small" style="width: 100px;" />
+            </div>
+            <div class="param-row">
+              <span class="param-label">死区阈值 δ_th</span>
+              <el-slider v-model="lcParams.delta_th" :min="0.01" :max="1.0" :step="0.01" :show-tooltip="true" style="flex:1; margin: 0 8px;" />
+              <el-input-number v-model="lcParams.delta_th" :min="0.01" :max="1.0" :step="0.01" :precision="2" size="small" style="width: 100px;" />
+            </div>
+            <div class="param-row">
+              <span class="param-label">一致性窗口长度 N (帧)</span>
+              <el-slider v-model="lcParams.N" :min="1" :max="20" :step="1" :show-tooltip="true" style="flex:1; margin: 0 8px;" />
+              <el-input-number v-model="lcParams.N" :min="1" :max="20" :step="1" size="small" style="width: 100px;" />
+            </div>
+          </el-collapse-item>
+        </el-collapse>
+
+        <div style="margin-top: 12px; text-align: center;">
+          <el-button type="primary" @click="handleApplyParams" :loading="applyingParams">下发参数</el-button>
+          <el-button @click="handleResetParams">重置默认</el-button>
+        </div>
       </div>
       <div>
         <!--此div为设置区域(控制面板)-->
@@ -330,6 +404,51 @@ const open_plugin_drawer = ref(false);
 const cur_plugin_code_tab = ref(1);
 const plugin_code = ref("");
 const plugin_code_tabs = ref([ { label: '跟驰插件', name:"test", id: 1}]);
+
+// 行为模型参数在线调整
+const paramPanelActive = ref('cf_fixed');
+const applyingParams = ref(false);
+
+const defaultCfParams = () => ({
+  b: 1.5, s0: 2.0, delta: 4, tau: 0.1,
+  T_min: 0.5, T_max: 3.0,
+  v0_min: 5.0, v0_max: 40.0,
+  a_min: 0.5, a_ub: 3.0,
+});
+const defaultLcParams = () => ({
+  d_safe_th: 5.0, delta_th: 0.1, N: 5,
+});
+
+const cfParams = ref(defaultCfParams());
+const lcParams = ref(defaultLcParams());
+
+const handleApplyParams = async () => {
+  applyingParams.value = true;
+  try {
+    // 通过 WebSocket 下发参数到仿真引擎
+    if (ws.value && ws.value.readyState === WebSocket.OPEN) {
+      const msg = JSON.stringify({
+        type: 'updateParams',
+        cfParams: cfParams.value,
+        lcParams: lcParams.value,
+      });
+      ws.value.send(msg);
+      ElMessage.success('参数已下发，将在下一仿真步生效');
+    } else {
+      ElMessage.warning('WebSocket 未连接，无法下发参数');
+    }
+  } catch (err: any) {
+    ElMessage.error('参数下发失败: ' + (err.message || '未知错误'));
+  } finally {
+    applyingParams.value = false;
+  }
+};
+
+const handleResetParams = () => {
+  cfParams.value = defaultCfParams();
+  lcParams.value = defaultLcParams();
+  ElMessage.info('参数已重置为默认值');
+};
 const cur_step_num = ref(1);
 const click_object_type = ref('veh');
 const cur_obj_attr = ref({
@@ -1656,5 +1775,18 @@ onBeforeRouteLeave((to, from, next) => {
     width: 100%;
     height: 300px;
   }
+}
+
+.param-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.param-label {
+  min-width: 160px;
+  font-size: 12px;
+  color: #606266;
+  white-space: nowrap;
 }
 </style>

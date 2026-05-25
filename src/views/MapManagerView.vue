@@ -64,6 +64,17 @@
       </el-button>
     </el-empty>
 
+    <!-- 查看地图弹窗 -->
+    <el-dialog
+      title="查看地图"
+      v-model="viewDialogVisible"
+      width="80%"
+    >
+      <div style="display: flex; justify-content: center;">
+        <el-image :src="mapImageUrl" fit="contain" style="max-height: 80vh;" />
+      </div>
+    </el-dialog>
+
     <!-- 地图上传弹窗 -->
     <el-dialog
       title="上传地图"
@@ -114,11 +125,12 @@
 import { ref, reactive, onMounted } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Search, Plus, View, Edit, Delete } from '@element-plus/icons-vue';
-import { getMaps as getMapsApi, deleteMap, uploadMap } from '@/apis/MapApi';
+import { getMaps as getMapsApi, deleteMap, uploadMap, getMapDetail, createMap, updateMap } from '@/apis/MapApi';
+import { generate_thumbnail } from './SimSteps/js/sim';
 
 // 定义地图项类型
 interface MapItem {
-  id: string;
+  mapId: string;
   name: string;
   description: string;
   imageUrl: string;
@@ -133,6 +145,8 @@ const total = ref(0);
 const page = ref(1);
 const pageSize = ref(12);
 const dialogVisible = ref(false);
+const viewDialogVisible = ref(false);
+const mapImageUrl = ref('');
 const mapFormRef = ref();
 const uploadRef = ref();
 const fileList = ref([]);
@@ -152,7 +166,7 @@ onMounted(() => {
 });
 
 const mapForm = reactive({
-  id: '',
+  mapId: '',
   name: '',
   description: '',
   file: null,
@@ -177,9 +191,10 @@ const getMaps = () => {
     name: searchQuery.value
   };
   getMapsApi(params).then(response => {
+    console.log('getMapsApi 接口返回：', response);
     if (response.success && response.data) {
-      maps.value = response.data.records;
-      total.value = response.data.total;
+      maps.value = response.data.maps || response.data.records || [];
+      total.value = response.data.total || 0;
     } else {
       ElMessage.error(response.message || '获取地图列表失败');
     }
@@ -194,8 +209,89 @@ const handleAddMap = () => {
 };
 
 const handleViewMap = (map: MapItem) => {
-  // 查看地图详情
-  ElMessage.info('查看地图：' + map.name);
+  console.log('当前地图对象：', map);
+  getMapDetail(map.mapId).then(response => {
+    console.log('getMapDetail 接口返回：', response);
+    if (response.success && response.data) {
+      try {
+        let mapJsonData = response.data.mapImage;
+        
+        // 处理数据：将单节点转为数组
+        if (mapJsonData) {
+          for (let key in mapJsonData) {
+            if (!Array.isArray(mapJsonData[key])) {
+              mapJsonData[key] = [mapJsonData[key]];
+            }
+          }
+          
+          // 处理坐标数据，确保是整数
+          function convertStringsToInt(obj: any) {
+            if (typeof obj === "object" && obj !== null) {
+              for (let key in obj) {
+                if (obj.hasOwnProperty(key)) {
+                  obj[key] = convertStringsToInt(obj[key]);
+                }
+              }
+            } else if (typeof obj === "string" && !isNaN(Number(obj))) {
+              return parseInt(obj, 10);
+            }
+            return obj;
+          }
+          convertStringsToInt(mapJsonData);
+          
+          // 关联 MarginalPoint 和 Road_ID
+          if (mapJsonData.Link && mapJsonData.MarginalPoint) {
+            for (let link_value of mapJsonData.Link) {
+              let link_start_type = link_value.Link_Start?.Object_Type;
+              if (link_start_type == "M") {
+                const road_id = link_value.Road_ID;
+                const obj_id = link_value.Link_Start?.Object_ID;
+                for (let i = 0; i < mapJsonData.MarginalPoint.length; i++) {
+                  const mp_value = mapJsonData.MarginalPoint[i];
+                  if (mp_value.Object_ID == obj_id) {
+                    mapJsonData.MarginalPoint[i].Road_ID = road_id;
+                    break;
+                  }
+                }
+              }
+            }
+          }
+          
+          // 获取 lane_num
+          const lane_num = mapJsonData.Link && mapJsonData.Link[0] 
+            ? mapJsonData.Link[0]["Lane_Number"] 
+            : 2;
+          
+          // 生成缩略图
+          const map_pic_url = generate_thumbnail(
+            mapJsonData,
+            lane_num,
+            true,
+            true
+          );
+          
+          mapImageUrl.value = map_pic_url;
+        } else {
+          // 兜底逻辑：使用骨架图
+          mapImageUrl.value = "https://cube.elemecdn.com/6/94/4d3ea53c084bad6931a56d5158a48jpeg.jpeg";
+        }
+      } catch (error) {
+        console.error('解析地图数据错误：', error);
+        // 兜底逻辑：使用骨架图
+        mapImageUrl.value = "https://cube.elemecdn.com/6/94/4d3ea53c084bad6931a56d5158a48jpeg.jpeg";
+      }
+    } else {
+      // 兜底逻辑：使用骨架图
+      mapImageUrl.value = "https://cube.elemecdn.com/6/94/4d3ea53c084bad6931a56d5158a48jpeg.jpeg";
+    }
+    // 不管成功失败都显示弹窗
+    viewDialogVisible.value = true;
+  }).catch(error => {
+    console.error('getMapDetail 接口错误：', error);
+    // 兜底逻辑：使用骨架图
+    mapImageUrl.value = "https://cube.elemecdn.com/6/94/4d3ea53c084bad6931a56d5158a48jpeg.jpeg";
+    viewDialogVisible.value = true;
+  });
 };
 
 const handleEditMap = (map: MapItem) => {
@@ -214,7 +310,7 @@ const handleDeleteMap = (map: MapItem) => {
       type: 'warning'
     }
   ).then(() => {
-    deleteMap(map.id).then(response => {
+    deleteMap(map.mapId).then(response => {
       if (response.success) {
         ElMessage.success('删除地图成功');
         getMaps();
@@ -250,10 +346,40 @@ const handleUploadError = (error: any) => {
 const saveMap = () => {
   mapFormRef.value?.validate((valid: boolean) => {
     if (valid) {
-      // 保存地图信息
-      ElMessage.success('地图保存成功');
-      dialogVisible.value = false;
-      getMaps();
+      const mapData = {
+        name: mapForm.name,
+        description: mapForm.description,
+        filePath: mapForm.file,
+        imageUrl: mapForm.imageUrl
+      };
+      
+      if (mapForm.mapId) {
+        // 编辑模式
+        updateMap(mapForm.mapId, mapData).then(response => {
+          if (response.success) {
+            ElMessage.success('地图更新成功');
+            dialogVisible.value = false;
+            getMaps();
+          } else {
+            ElMessage.error(response.message || '地图更新失败');
+          }
+        }).catch(error => {
+          ElMessage.error('地图更新失败：' + error.message);
+        });
+      } else {
+        // 新增模式
+        createMap(mapData).then(response => {
+          if (response.success) {
+            ElMessage.success('地图创建成功');
+            dialogVisible.value = false;
+            getMaps();
+          } else {
+            ElMessage.error(response.message || '地图创建失败');
+          }
+        }).catch(error => {
+          ElMessage.error('地图创建失败：' + error.message);
+        });
+      }
     } else {
       return false;
     }
@@ -261,7 +387,7 @@ const saveMap = () => {
 };
 
 const resetForm = () => {
-  mapForm.id = '';
+  mapForm.mapId = '';
   mapForm.name = '';
   mapForm.description = '';
   mapForm.file = null;
